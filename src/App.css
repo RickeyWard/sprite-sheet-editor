@@ -178,16 +178,26 @@ body {
   background: #d73a49;
   color: white;
   border: none;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 22px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .remove-btn:hover {
   background: #e53e3e;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .frame-preview {
@@ -208,6 +218,9 @@ body {
 
 .frame-info {
   text-align: center;
+  padding: 0.25rem;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .frame-name {
@@ -216,6 +229,14 @@ body {
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 2px;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.2;
+  max-width: 100%;
+  margin-bottom: 0.25rem;
+  display: block;
 }
 
 .frame-name:hover {
@@ -230,11 +251,18 @@ body {
   border-radius: 2px;
   font-size: 0.8rem;
   width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  resize: none;
 }
 
 .frame-dimensions {
   font-size: 0.7rem;
   color: #a0a0a0;
+  margin-top: 0.25rem;
+  display: block;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Animation manager */

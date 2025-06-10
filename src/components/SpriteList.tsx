@@ -58,7 +58,7 @@ export const SpriteList: React.FC<SpriteListProps> = ({
                 onClick={() => onFrameRemove(frame.id)}
                 title="Remove frame"
               >
-                ×
+                ✕
               </button>
             </div>
             
