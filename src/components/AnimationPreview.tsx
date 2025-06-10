@@ -34,6 +34,14 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
   const animationFrameNames = selectedAnimation && packedSheet 
     ? packedSheet.spritesheet.animations?.[selectedAnimation.name] || []
     : [];
+
+  // Auto-start animation when a new animation is selected
+  useEffect(() => {
+    if (selectedAnimationId && selectedAnimation) {
+      setCurrentFrameIndex(0); // Reset to first frame
+      setIsPlaying(true); // Start playing automatically
+    }
+  }, [selectedAnimationId, selectedAnimation]);
   
   // Fallback to original frames if no spritesheet available
   const fallbackFrames = selectedAnimation?.frameIds.map(frameId => 
@@ -228,10 +236,8 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
     drawFrame();
   }, [drawFrame]);
 
-  // Reset frame index and pan when animation changes
+  // Reset pan when animation changes (frame index and playing state handled by auto-start effect)
   useEffect(() => {
-    setCurrentFrameIndex(0);
-    setIsPlaying(false);
     setPan({ x: 0, y: 0 });
   }, [selectedAnimationId]);
 

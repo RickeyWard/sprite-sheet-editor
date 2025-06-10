@@ -1375,11 +1375,11 @@ body {
 }
 
 .play-btn {
-  background: #28a745;
+  /* Removed green background - will inherit default control-btn styling */
 }
 
 .play-btn:hover {
-  background: #34ce57;
+  /* Removed green hover background - will inherit default control-btn:hover styling */
 }
 
 .speed-control {

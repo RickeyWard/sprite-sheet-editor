@@ -263,11 +263,6 @@ function App() {
 
       <main className="app-main">
         <div className="left-panel">
-          <section className="upload-section">
-            <FileUpload onFilesAdded={handleFilesAdded} />
-            {isLoading && <div className="loading">Loading images...</div>}
-          </section>
-
           <section className="canvas-settings-section">
             <CanvasSettings
               maxWidth={maxWidth}
@@ -282,6 +277,11 @@ function App() {
               options={packingOptions}
               onOptionsChange={setPackingOptions}
             />
+          </section>
+
+          <section className="upload-section">
+            <FileUpload onFilesAdded={handleFilesAdded} />
+            {isLoading && <div className="loading">Loading images...</div>}
           </section>
 
           {frames.length > 0 && (
