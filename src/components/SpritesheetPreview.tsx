@@ -14,6 +14,7 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
+  const [includeImageData, setIncludeImageData] = useState(false);
 
   const drawCheckerboard = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, checkerSize: number = 16) => {
     const lightColor = '#ffffff';
@@ -101,7 +102,19 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
 
   const handleDownloadJSON = () => {
     if (packedSheet) {
-      downloadJSON(packedSheet.spritesheet, 'spritesheet.json');
+      if (includeImageData) {
+        // Create a copy of the spritesheet data with image data URL
+        const spritesheetWithImage = {
+          ...packedSheet.spritesheet,
+          meta: {
+            ...packedSheet.spritesheet.meta,
+            image: packedSheet.canvas.toDataURL('image/png')
+          }
+        };
+        downloadJSON(spritesheetWithImage, 'spritesheet.json');
+      } else {
+        downloadJSON(packedSheet.spritesheet, 'spritesheet.json');
+      }
     }
   };
 
@@ -143,30 +156,28 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     setIsPanning(false);
   };
 
-
-
   // Reset pan when packedSheet changes
   useEffect(() => {
     setPan({ x: 0, y: 0 });
     setZoom(1);
-}, [packedSheet]);
+  }, [packedSheet]);
 
-useEffect(() => {
+  useEffect(() => {
     const handleWheel = (event: WheelEvent) => {
-        event.stopPropagation();
-        event.preventDefault();
-        const zoomDelta = event.deltaY > 0 ? 0.9 : 1.1;
-        setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomDelta)));
-    }
+      event.stopPropagation();
+      event.preventDefault();
+      const zoomDelta = event.deltaY > 0 ? 0.9 : 1.1;
+      setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomDelta)));
+    };
     if (containerRef.current) {
-        containerRef.current.addEventListener("wheel", handleWheel)
+      containerRef.current.addEventListener("wheel", handleWheel);
     }
     return () => {
-        if (containerRef.current) {
-            containerRef.current.removeEventListener("wheel", handleWheel)
-        }
-    }
-}, [containerRef.current, setZoom])
+      if (containerRef.current) {
+        containerRef.current.removeEventListener("wheel", handleWheel);
+      }
+    };
+  }, [containerRef.current, setZoom]);
 
   if (!packedSheet) {
     return (
@@ -247,12 +258,31 @@ useEffect(() => {
         <button onClick={handleDownloadJSON} className="export-btn">
           📄 Download JSON
         </button>
+        <div className="export-options">
+          <label className="export-option">
+            <input
+              type="checkbox"
+              checked={includeImageData}
+              onChange={(e) => setIncludeImageData(e.target.checked)}
+            />
+            Include image data URL in JSON
+          </label>
+        </div>
       </div>
       
       <details className="json-preview">
         <summary>JSON Preview</summary>
         <pre className="json-content">
-          {JSON.stringify(spritesheet, null, 2)}
+          {includeImageData && packedSheet ? 
+            JSON.stringify({
+              ...packedSheet.spritesheet,
+              meta: {
+                ...packedSheet.spritesheet.meta,
+                image: packedSheet.canvas.toDataURL('image/png')
+              }
+            }, null, 2) :
+            JSON.stringify(spritesheet, null, 2)
+          }
         </pre>
       </details>
     </div>

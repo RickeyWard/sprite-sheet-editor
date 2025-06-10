@@ -761,8 +761,28 @@ body {
 
 .export-controls {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 1rem;
+}
+
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #a0a0a0;
+  cursor: pointer;
+}
+
+.export-option input[type="checkbox"] {
+  margin: 0;
 }
 
 .export-btn {
