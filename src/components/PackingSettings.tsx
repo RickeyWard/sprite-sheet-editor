@@ -41,7 +41,7 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
         allowRotation: false
       },
       preserve: {
-        spacing: 1,
+        spacing: 0,
         trimWhitespace: false,
         forcePowerOf2: false,
         padding: 0,

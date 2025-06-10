@@ -143,17 +143,30 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     setIsPanning(false);
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomDelta)));
-  };
+
 
   // Reset pan when packedSheet changes
   useEffect(() => {
     setPan({ x: 0, y: 0 });
     setZoom(1);
-  }, [packedSheet]);
+}, [packedSheet]);
+
+useEffect(() => {
+    const handleWheel = (event: WheelEvent) => {
+        event.stopPropagation();
+        event.preventDefault();
+        const zoomDelta = event.deltaY > 0 ? 0.9 : 1.1;
+        setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomDelta)));
+    }
+    if (containerRef.current) {
+        containerRef.current.addEventListener("wheel", handleWheel)
+    }
+    return () => {
+        if (containerRef.current) {
+            containerRef.current.removeEventListener("wheel", handleWheel)
+        }
+    }
+}, [containerRef.current, setZoom])
 
   if (!packedSheet) {
     return (
@@ -219,7 +232,6 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
         style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
       >
         <canvas

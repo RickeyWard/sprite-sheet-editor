@@ -145,6 +145,23 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
     setPan({ x: 0, y: 0 });
   }, [selectedAnimationId]);
 
+  useEffect(() => {
+    const handleWheel = (event: WheelEvent) => {
+        event.stopPropagation();
+        event.preventDefault();
+        const zoomDelta = event.deltaY > 0 ? 0.9 : 1.1;
+        setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomDelta)));
+    }
+    if (containerRef.current) {
+        containerRef.current.addEventListener("wheel", handleWheel)
+    }
+    return () => {
+        if (containerRef.current) {
+            containerRef.current.removeEventListener("wheel", handleWheel)
+        }
+    }
+}, [containerRef.current, setZoom])
+
   const handlePlay = () => {
     if (animationFrames.length > 0) {
       setIsPlaying(!isPlaying);
@@ -209,11 +226,7 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
     setIsPanning(false);
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom(prev => Math.max(0.1, Math.min(16, prev * zoomDelta)));
-  };
+
 
   if (animations.length === 0) {
     return (
@@ -257,7 +270,6 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            onWheel={handleWheel}
             style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
           >
             <canvas
