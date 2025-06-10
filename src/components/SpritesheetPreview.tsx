@@ -16,6 +16,41 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
   const [includeImageData, setIncludeImageData] = useState(false);
   const [autoFit, setAutoFit] = useState(true);
+  const [marchingAntsOffset, setMarchingAntsOffset] = useState(0);
+
+  // Animation for marching ants
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMarchingAntsOffset(prev => (prev + 1) % 8);
+    }, 100); // Update every 100ms for smooth animation
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const drawMarchingAnts = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
+    ctx.save();
+    ctx.lineWidth = 1;
+    
+    // Function to draw a dashed line with marching ants effect
+    const drawDashedRect = (x: number, y: number, width: number, height: number) => {
+      const dashLength = 4;
+      
+      // Draw white border first
+      ctx.setLineDash([dashLength, dashLength]);
+      ctx.lineDashOffset = -marchingAntsOffset;
+      ctx.strokeStyle = 'white';
+      ctx.strokeRect(x, y, width, height);
+      
+      // Draw black border offset
+      ctx.setLineDash([dashLength, dashLength]);
+      ctx.lineDashOffset = -marchingAntsOffset - dashLength;
+      ctx.strokeStyle = 'black';
+      ctx.strokeRect(x, y, width, height);
+    };
+    
+    drawDashedRect(x, y, width, height);
+    ctx.restore();
+  }, [marchingAntsOffset]);
 
   const drawCheckerboard = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, checkerSize: number = 16) => {
     const lightColor = '#ffffff';
@@ -100,19 +135,16 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     ctx.imageSmoothingEnabled = false; // Keep pixel art crisp
     ctx.drawImage(sourceCanvas, offsetX, offsetY, displayWidth, displayHeight);
     
-    // Draw frame boundaries
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 1;
-    
+    // Draw frame boundaries with marching ants
     Object.values(packedSheet.spritesheet.frames).forEach(frame => {
       const x = offsetX + (frame.frame.x * effectiveZoom);
       const y = offsetY + (frame.frame.y * effectiveZoom);
       const w = frame.frame.w * effectiveZoom;
       const h = frame.frame.h * effectiveZoom;
       
-      ctx.strokeRect(x, y, w, h);
+      drawMarchingAnts(ctx, x, y, w, h);
     });
-  }, [packedSheet, zoom, pan, drawCheckerboard, autoFit, calculateAutoFitZoom]);
+  }, [packedSheet, zoom, pan, drawCheckerboard, autoFit, calculateAutoFitZoom, drawMarchingAnts]);
 
   useEffect(() => {
     drawCanvas();

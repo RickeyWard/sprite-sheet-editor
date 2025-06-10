@@ -8,12 +8,16 @@ interface CanvasSettingsProps {
 }
 
 const PRESET_SIZES = [
+  { label: '128×128', width: 128, height: 128 },
+  { label: '256×256', width: 256, height: 256 },
   { label: '512×512', width: 512, height: 512 },
   { label: '1024×1024', width: 1024, height: 1024 },
   { label: '2048×2048', width: 2048, height: 2048 },
   { label: '4096×4096', width: 4096, height: 4096 },
   { label: '1024×512', width: 1024, height: 512 },
   { label: '2048×1024', width: 2048, height: 1024 },
+  { label: '4096×2048', width: 4096, height: 2048 },
+  { label: '4096×4096', width: 4096, height: 4096 },
 ];
 
 export const CanvasSettings: React.FC<CanvasSettingsProps> = ({
