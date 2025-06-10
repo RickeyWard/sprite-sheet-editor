@@ -667,7 +667,6 @@ body {
 .spritesheet-zoom-controls .zoom-btn.active {
   background: #61dafb;
   color: #1a1a1a;
-  font-weight: 500;
 }
 
 .reset-btn {
@@ -1300,7 +1299,6 @@ body {
 .zoom-btn.active {
   background: #61dafb;
   color: #1a1a1a;
-  font-weight: 500;
 }
 
 .zoom-slider-container {
@@ -1711,4 +1709,26 @@ body {
   .slicer-actions {
     flex-direction: column;
   }
+}
+
+.auto-fit-btn {
+  font-weight: 600;
+}
+
+.auto-fit-btn.active {
+  background: #28a745 !important;
+  color: white !important;
+}
+
+.zoom-btn:disabled,
+.reset-btn:disabled {
+  background: #333 !important;
+  color: #666 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.zoom-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

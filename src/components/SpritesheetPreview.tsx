@@ -15,6 +15,7 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
   const [includeImageData, setIncludeImageData] = useState(false);
+  const [autoFit, setAutoFit] = useState(true);
 
   const drawCheckerboard = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, checkerSize: number = 16) => {
     const lightColor = '#ffffff';
@@ -41,6 +42,25 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     }
   }, []);
 
+  const calculateAutoFitZoom = useCallback(() => {
+    if (!canvasRef.current || !packedSheet || !containerRef.current) return 1;
+    
+    const container = containerRef.current;
+    const sourceCanvas = packedSheet.canvas;
+    
+    // Get container dimensions with some padding
+    const containerWidth = container.clientWidth - 40; // 20px padding on each side
+    const containerHeight = container.clientHeight - 40;
+    
+    // Calculate zoom to fit both width and height
+    const zoomX = containerWidth / sourceCanvas.width;
+    const zoomY = containerHeight / sourceCanvas.height;
+    
+    // Use the smaller zoom to ensure it fits in both dimensions
+    // Allow zooming up but cap at reasonable maximum
+    return Math.max(0.1, Math.min(zoomX, zoomY, 10));
+  }, [packedSheet]);
+
   const drawCanvas = useCallback(() => {
     if (!canvasRef.current || !packedSheet) return;
 
@@ -48,9 +68,13 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     const ctx = canvas.getContext('2d')!;
     const sourceCanvas = packedSheet.canvas;
     
+    // Use auto-fit zoom if enabled, otherwise use manual zoom
+    const effectiveZoom = autoFit ? calculateAutoFitZoom() : zoom;
+    const effectivePan = autoFit ? { x: 0, y: 0 } : pan;
+    
     // Calculate display size with zoom
-    const displayWidth = sourceCanvas.width * zoom;
-    const displayHeight = sourceCanvas.height * zoom;
+    const displayWidth = sourceCanvas.width * effectiveZoom;
+    const displayHeight = sourceCanvas.height * effectiveZoom;
     
     // Set canvas size to container size
     const container = containerRef.current;
@@ -65,11 +89,11 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     // Apply pan offset and center the image initially
     const centerX = (canvas.width - displayWidth) / 2;
     const centerY = (canvas.height - displayHeight) / 2;
-    const offsetX = centerX + pan.x;
-    const offsetY = centerY + pan.y;
+    const offsetX = centerX + effectivePan.x;
+    const offsetY = centerY + effectivePan.y;
     
     // Draw checkerboard background
-    const checkerSize = Math.max(8, 16 * zoom); // Scale checker size with zoom
+    const checkerSize = Math.max(8, 16 * effectiveZoom); // Scale checker size with zoom
     drawCheckerboard(ctx, offsetX, offsetY, displayWidth, displayHeight, checkerSize);
     
     // Draw the spritesheet
@@ -81,14 +105,14 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     ctx.lineWidth = 1;
     
     Object.values(packedSheet.spritesheet.frames).forEach(frame => {
-      const x = offsetX + (frame.frame.x * zoom);
-      const y = offsetY + (frame.frame.y * zoom);
-      const w = frame.frame.w * zoom;
-      const h = frame.frame.h * zoom;
+      const x = offsetX + (frame.frame.x * effectiveZoom);
+      const y = offsetY + (frame.frame.y * effectiveZoom);
+      const w = frame.frame.w * effectiveZoom;
+      const h = frame.frame.h * effectiveZoom;
       
       ctx.strokeRect(x, y, w, h);
     });
-  }, [packedSheet, zoom, pan, drawCheckerboard]);
+  }, [packedSheet, zoom, pan, drawCheckerboard, autoFit, calculateAutoFitZoom]);
 
   useEffect(() => {
     drawCanvas();
@@ -134,6 +158,12 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
 
   // Pan controls
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (autoFit) {
+      // Preserve the current auto-fit zoom and reset pan when transitioning to manual control
+      setZoom(calculateAutoFitZoom());
+      setPan({ x: 0, y: 0 }); // Reset pan to prevent jumping
+      setAutoFit(false);
+    }
     setIsPanning(true);
     setLastPanPoint({ x: e.clientX, y: e.clientY });
   };
@@ -166,6 +196,12 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     const handleWheel = (event: WheelEvent) => {
       event.stopPropagation();
       event.preventDefault();
+      if (autoFit) {
+        // Preserve the current auto-fit zoom and reset pan when transitioning to manual control
+        setZoom(calculateAutoFitZoom());
+        setPan({ x: 0, y: 0 }); // Reset pan to prevent jumping
+        setAutoFit(false);
+      }
       const zoomDelta = event.deltaY > 0 ? 0.9 : 1.1;
       setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomDelta)));
     };
@@ -177,7 +213,7 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
         containerRef.current.removeEventListener("wheel", handleWheel);
       }
     };
-  }, [containerRef.current, setZoom]);
+  }, [containerRef.current, setZoom, autoFit, calculateAutoFitZoom]);
 
   if (!packedSheet) {
     return (
@@ -200,22 +236,46 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
         <span>Size: {canvas.width} × {canvas.height}</span>
         <span>Frames: {Object.keys(spritesheet.frames).length}</span>
         <span>Animations: {Object.keys(spritesheet.animations).length}</span>
-        <span>Zoom: {Math.round(zoom * 100)}%</span>
+        <span>Zoom: {Math.round((autoFit ? calculateAutoFitZoom() : zoom) * 100)}%</span>
       </div>
 
       <div className="spritesheet-zoom-controls">
         <div className="zoom-presets">
           <span>Zoom:</span>
+          <button
+            onClick={() => {
+              if (autoFit) {
+                // When manually disabling auto-fit, preserve zoom and reset pan
+                setZoom(calculateAutoFitZoom());
+                setPan({ x: 0, y: 0 });
+              }
+              setAutoFit(!autoFit);
+            }}
+            className={`zoom-btn auto-fit-btn ${autoFit ? 'active' : ''}`}
+            title="Auto fit to container"
+          >
+            📐 Auto
+          </button>
           {[0.25, 0.5, 1, 2, 4].map(zoomLevel => (
             <button
               key={zoomLevel}
-              onClick={() => handleZoomPreset(zoomLevel)}
-              className={`zoom-btn ${zoom === zoomLevel ? 'active' : ''}`}
+              onClick={() => {
+                setAutoFit(false);
+                handleZoomPreset(zoomLevel);
+              }}
+              className={`zoom-btn ${!autoFit && zoom === zoomLevel ? 'active' : ''}`}
             >
               {zoomLevel}x
             </button>
           ))}
-          <button onClick={handleResetView} className="reset-btn" title="Reset view">
+          <button 
+            onClick={() => {
+              setAutoFit(false);
+              handleResetView();
+            }} 
+            className="reset-btn" 
+            title="Reset view"
+          >
             🎯
           </button>
         </div>
@@ -225,11 +285,21 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
             min="0.1"
             max="10"
             step="0.1"
-            value={zoom}
-            onChange={handleZoomChange}
+            value={autoFit ? calculateAutoFitZoom() : zoom}
+            onChange={(e) => {
+              if (autoFit) {
+                // Preserve the current auto-fit zoom and reset pan when starting to use slider
+                setZoom(calculateAutoFitZoom());
+                setPan({ x: 0, y: 0 }); // Reset pan to prevent jumping
+                setAutoFit(false);
+              }
+              handleZoomChange(e);
+            }}
             className="zoom-slider"
           />
-          <span className="zoom-value">{Math.round(zoom * 100)}%</span>
+          <span className="zoom-value">
+            {Math.round((autoFit ? calculateAutoFitZoom() : zoom) * 100)}%
+          </span>
         </div>
         <div className="pan-instructions">
           <span>💡 Drag to pan, scroll to zoom</span>

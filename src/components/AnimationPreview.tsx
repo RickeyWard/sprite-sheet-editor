@@ -21,6 +21,7 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
+  const [autoFit, setAutoFit] = useState(true);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,18 +43,6 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
   // Use spritesheet data if available AND the animation exists in the spritesheet
   const usingSpritesheetData = packedSheet && animationFrameNames.length > 0;
   
-  // Debug logging
-  useEffect(() => {
-    if (selectedAnimation) {
-      console.log('Animation selected:', selectedAnimation.name);
-      console.log('Packed sheet available:', !!packedSheet);
-      console.log('Spritesheet animations:', packedSheet?.spritesheet.animations);
-      console.log('Animation frame names:', animationFrameNames);
-      console.log('Fallback frames:', fallbackFrames.length);
-      console.log('Using spritesheet data:', usingSpritesheetData);
-    }
-  }, [selectedAnimation, packedSheet, animationFrameNames, fallbackFrames, usingSpritesheetData]);
-
   const drawCheckerboard = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, checkerSize: number = 8) => {
     const lightColor = '#ffffff';
     const darkColor = '#cccccc';
@@ -77,6 +66,43 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
       }
     }
   }, []);
+
+  const calculateAutoFitZoom = useCallback(() => {
+    if (!canvasRef.current || !containerRef.current) return 2;
+    
+    const container = containerRef.current;
+    let maxWidth = 0;
+    let maxHeight = 0;
+    
+    // Find the largest frame dimensions
+    if (usingSpritesheetData && packedSheet && animationFrameNames.length > 0) {
+      animationFrameNames.forEach(frameName => {
+        const frameData = packedSheet.spritesheet.frames[frameName];
+        if (frameData) {
+          maxWidth = Math.max(maxWidth, frameData.sourceSize.w);
+          maxHeight = Math.max(maxHeight, frameData.sourceSize.h);
+        }
+      });
+    } else if (fallbackFrames.length > 0) {
+      fallbackFrames.forEach(frame => {
+        maxWidth = Math.max(maxWidth, frame.width);
+        maxHeight = Math.max(maxHeight, frame.height);
+      });
+    }
+    
+    if (maxWidth === 0 || maxHeight === 0) return 2;
+    
+    // Get container dimensions with padding
+    const containerWidth = container.clientWidth - 40;
+    const containerHeight = container.clientHeight - 40;
+    
+    // Calculate zoom to fit both dimensions
+    const zoomX = containerWidth / maxWidth;
+    const zoomY = containerHeight / maxHeight;
+    
+    // Use the smaller zoom and cap at reasonable limits
+    return Math.max(0.25, Math.min(zoomX, zoomY, 8));
+  }, [usingSpritesheetData, packedSheet, animationFrameNames, fallbackFrames]);
 
   // Animation loop
   const animate = useCallback((timestamp: number) => {
@@ -138,6 +164,10 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Use auto-fit zoom if enabled, otherwise use manual zoom
+    const effectiveZoom = autoFit ? calculateAutoFitZoom() : zoom;
+    const effectivePan = autoFit ? { x: 0, y: 0 } : pan;
+
     // Use spritesheet data if available, otherwise fall back to original frames
     if (usingSpritesheetData && packedSheet && animationFrameNames.length > 0) {
       const currentFrameName = animationFrameNames[currentFrameIndex];
@@ -146,27 +176,27 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
       if (!frameData) return;
 
       // Calculate display size with zoom
-      const displayWidth = frameData.sourceSize.w * zoom;
-      const displayHeight = frameData.sourceSize.h * zoom;
+      const displayWidth = frameData.sourceSize.w * effectiveZoom;
+      const displayHeight = frameData.sourceSize.h * effectiveZoom;
 
       // Apply pan offset and center the image initially
       const centerX = (canvas.width - displayWidth) / 2;
       const centerY = (canvas.height - displayHeight) / 2;
-      const offsetX = centerX + pan.x;
-      const offsetY = centerY + pan.y;
+      const offsetX = centerX + effectivePan.x;
+      const offsetY = centerY + effectivePan.y;
 
       // Draw checkerboard background
-      const checkerSize = Math.max(4, 8 * zoom);
+      const checkerSize = Math.max(4, 8 * effectiveZoom);
       drawCheckerboard(ctx, offsetX, offsetY, displayWidth, displayHeight, checkerSize);
       
       // Draw frame from spritesheet
       ctx.imageSmoothingEnabled = false;
       
       // Calculate the position within the original frame size
-      const spriteX = offsetX + (frameData.spriteSourceSize.x * zoom);
-      const spriteY = offsetY + (frameData.spriteSourceSize.y * zoom);
-      const spriteWidth = frameData.frame.w * zoom;
-      const spriteHeight = frameData.frame.h * zoom;
+      const spriteX = offsetX + (frameData.spriteSourceSize.x * effectiveZoom);
+      const spriteY = offsetY + (frameData.spriteSourceSize.y * effectiveZoom);
+      const spriteWidth = frameData.frame.w * effectiveZoom;
+      const spriteHeight = frameData.frame.h * effectiveZoom;
       
       ctx.drawImage(
         packedSheet.canvas,
@@ -178,21 +208,21 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
       const currentFrame = fallbackFrames[currentFrameIndex];
       if (!currentFrame) return;
 
-      const displayWidth = currentFrame.width * zoom;
-      const displayHeight = currentFrame.height * zoom;
+      const displayWidth = currentFrame.width * effectiveZoom;
+      const displayHeight = currentFrame.height * effectiveZoom;
 
       const centerX = (canvas.width - displayWidth) / 2;
       const centerY = (canvas.height - displayHeight) / 2;
-      const offsetX = centerX + pan.x;
-      const offsetY = centerY + pan.y;
+      const offsetX = centerX + effectivePan.x;
+      const offsetY = centerY + effectivePan.y;
 
-      const checkerSize = Math.max(4, 8 * zoom);
+      const checkerSize = Math.max(4, 8 * effectiveZoom);
       drawCheckerboard(ctx, offsetX, offsetY, displayWidth, displayHeight, checkerSize);
       
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(currentFrame.image, offsetX, offsetY, displayWidth, displayHeight);
     }
-  }, [usingSpritesheetData, packedSheet, animationFrameNames, currentFrameIndex, fallbackFrames, zoom, pan, drawCheckerboard]);
+  }, [usingSpritesheetData, packedSheet, animationFrameNames, currentFrameIndex, fallbackFrames, zoom, pan, drawCheckerboard, autoFit, calculateAutoFitZoom]);
 
   useEffect(() => {
     drawFrame();
@@ -209,18 +239,24 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
     const handleWheel = (event: WheelEvent) => {
         event.stopPropagation();
         event.preventDefault();
+        if (autoFit) {
+          // Preserve the current auto-fit zoom and reset pan when transitioning to manual control
+          setZoom(calculateAutoFitZoom());
+          setPan({ x: 0, y: 0 }); // Reset pan to prevent jumping
+          setAutoFit(false);
+        }
         const zoomDelta = event.deltaY > 0 ? 0.9 : 1.1;
         setZoom(prev => Math.max(0.1, Math.min(10, prev * zoomDelta)));
-    }
+    };
     if (containerRef.current) {
-        containerRef.current.addEventListener("wheel", handleWheel)
+        containerRef.current.addEventListener("wheel", handleWheel);
     }
     return () => {
         if (containerRef.current) {
-            containerRef.current.removeEventListener("wheel", handleWheel)
+            containerRef.current.removeEventListener("wheel", handleWheel);
         }
-    }
-}, [containerRef.current, setZoom])
+    };
+}, [containerRef.current, setZoom, autoFit, calculateAutoFitZoom]);
 
   const handlePlay = () => {
     const frameCount = usingSpritesheetData ? animationFrameNames.length : fallbackFrames.length;
@@ -267,6 +303,12 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
 
   // Pan controls
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (autoFit) {
+      // Preserve the current auto-fit zoom and reset pan when transitioning to manual control
+      setZoom(calculateAutoFitZoom());
+      setPan({ x: 0, y: 0 }); // Reset pan to prevent jumping
+      setAutoFit(false);
+    }
     setIsPanning(true);
     setLastPanPoint({ x: e.clientX, y: e.clientY });
   };
@@ -370,16 +412,40 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
           <div className="zoom-controls">
             <div className="zoom-presets">
               <span>Zoom:</span>
+              <button
+                onClick={() => {
+                  if (autoFit) {
+                    // When manually disabling auto-fit, preserve zoom and reset pan
+                    setZoom(calculateAutoFitZoom());
+                    setPan({ x: 0, y: 0 });
+                  }
+                  setAutoFit(!autoFit);
+                }}
+                className={`zoom-btn auto-fit-btn ${autoFit ? 'active' : ''}`}
+                title="Auto fit to container"
+              >
+                📐 Auto
+              </button>
               {[0.5, 1, 2, 4, 8].map(zoomLevel => (
                 <button
                   key={zoomLevel}
-                  onClick={() => handleZoomPreset(zoomLevel)}
-                  className={`zoom-btn ${zoom === zoomLevel ? 'active' : ''}`}
+                  onClick={() => {
+                    setAutoFit(false);
+                    handleZoomPreset(zoomLevel);
+                  }}
+                  className={`zoom-btn ${!autoFit && zoom === zoomLevel ? 'active' : ''}`}
                 >
                   {zoomLevel}x
                 </button>
               ))}
-              <button onClick={handleResetView} className="reset-btn" title="Reset view">
+              <button 
+                onClick={() => {
+                  setAutoFit(false);
+                  handleResetView();
+                }} 
+                className="reset-btn" 
+                title="Reset view"
+              >
                 🎯
               </button>
             </div>
@@ -389,11 +455,21 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
                 min="0.25"
                 max="16"
                 step="0.25"
-                value={zoom}
-                onChange={handleZoomChange}
+                value={autoFit ? calculateAutoFitZoom() : zoom}
+                onChange={(e) => {
+                  if (autoFit) {
+                    // Preserve the current auto-fit zoom and reset pan when starting to use slider
+                    setZoom(calculateAutoFitZoom());
+                    setPan({ x: 0, y: 0 }); // Reset pan to prevent jumping
+                    setAutoFit(false);
+                  }
+                  handleZoomChange(e);
+                }}
                 className="zoom-slider"
               />
-              <span className="zoom-value">{Math.round(zoom * 100)}%</span>
+              <span className="zoom-value">
+                {Math.round((autoFit ? calculateAutoFitZoom() : zoom) * 100)}%
+              </span>
             </div>
             <div className="pan-instructions">
               <span>💡 Drag to pan, scroll to zoom</span>
