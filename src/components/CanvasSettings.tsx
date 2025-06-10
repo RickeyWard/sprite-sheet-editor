@@ -29,12 +29,12 @@ export const CanvasSettings: React.FC<CanvasSettingsProps> = ({
 
   const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value) || 512;
-    onMaxWidthChange(Math.max(128, Math.min(8192, value)));
+    onMaxWidthChange(Math.max(8, Math.min(8192, value)));
   };
 
   const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value) || 512;
-    onMaxHeightChange(Math.max(128, Math.min(8192, value)));
+    onMaxHeightChange(Math.max(8, Math.min(8192, value)));
   };
 
   return (
@@ -47,9 +47,9 @@ export const CanvasSettings: React.FC<CanvasSettingsProps> = ({
           <input
             id="max-width"
             type="number"
-            min="128"
+            min="8"
             max="8192"
-            step="64"
+            step="16"
             value={maxWidth}
             onChange={handleWidthChange}
             className="dimension-input"
@@ -61,9 +61,9 @@ export const CanvasSettings: React.FC<CanvasSettingsProps> = ({
           <input
             id="max-height"
             type="number"
-            min="128"
+            min="8"
             max="8192"
-            step="64"
+            step="16"
             value={maxHeight}
             onChange={handleHeightChange}
             className="dimension-input"
