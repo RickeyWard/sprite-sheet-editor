@@ -165,14 +165,30 @@ export async function packSprites(
     return null;
   }
 
-  // Create canvas and draw sprites
+  // Calculate actual used dimensions
+  let actualWidth = 0;
+  let actualHeight = 0;
+  for (const rect of packed) {
+    const drawWidth = rect.frame.width - options.spacing;
+    const drawHeight = rect.frame.height - options.spacing;
+    actualWidth = Math.max(actualWidth, rect.x + drawWidth);
+    actualHeight = Math.max(actualHeight, rect.y + drawHeight);
+  }
+
+  // Optionally round up to power of 2 if needed
+  if (options.forcePowerOf2) {
+    actualWidth = Math.pow(2, Math.ceil(Math.log2(actualWidth)));
+    actualHeight = Math.pow(2, Math.ceil(Math.log2(actualHeight)));
+  }
+
+  // Create canvas with actual dimensions
   const canvas = document.createElement('canvas');
-  canvas.width = currentWidth;
-  canvas.height = currentHeight;
+  canvas.width = actualWidth;
+  canvas.height = actualHeight;
   const ctx = canvas.getContext('2d')!;
 
   // Clear canvas with transparent background
-  ctx.clearRect(0, 0, currentWidth, currentHeight);
+  ctx.clearRect(0, 0, actualWidth, actualHeight);
 
   const spritesheetFrames: Record<string, any> = {};
 
@@ -234,8 +250,8 @@ export async function packSprites(
       image: 'spritesheet.png',
       format: 'RGBA8888',
       size: {
-        w: currentWidth,
-        h: currentHeight
+        w: actualWidth,
+        h: actualHeight
       },
       scale: '1'
     }
