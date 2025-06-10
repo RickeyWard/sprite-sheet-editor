@@ -1216,12 +1216,28 @@ body {
   padding: 2rem;
 }
 
+/* Animation info styling */
 .animation-info {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 12px;
   color: #a0a0a0;
+}
+
+.animation-info span {
+  margin-right: 12px;
+}
+
+.data-source {
+  font-size: 12px !important;
+  color: #6c757d !important;
+  font-style: italic !important;
+  margin-left: auto !important;
 }
 
 .zoom-controls {

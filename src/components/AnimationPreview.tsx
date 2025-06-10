@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { Animation, SpriteFrame } from '../types';
+import type { Animation, SpriteFrame, PackedSheet } from '../types';
 
 interface AnimationPreviewProps {
   animations: Animation[];
   frames: SpriteFrame[];
+  packedSheet: PackedSheet | null;
 }
 
 export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
   animations,
-  frames
+  frames,
+  packedSheet
 }) => {
   const [selectedAnimationId, setSelectedAnimationId] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -26,9 +28,31 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
   const lastFrameTimeRef = useRef<number>(0);
 
   const selectedAnimation = animations.find(anim => anim.id === selectedAnimationId);
-  const animationFrames = selectedAnimation?.frameIds.map(frameId => 
+  
+  // Get frame names for this animation from the spritesheet
+  const animationFrameNames = selectedAnimation && packedSheet 
+    ? packedSheet.spritesheet.animations?.[selectedAnimation.name] || []
+    : [];
+  
+  // Fallback to original frames if no spritesheet available
+  const fallbackFrames = selectedAnimation?.frameIds.map(frameId => 
     frames.find(frame => frame.id === frameId)
   ).filter(Boolean) as SpriteFrame[] || [];
+  
+  // Use spritesheet data if available AND the animation exists in the spritesheet
+  const usingSpritesheetData = packedSheet && animationFrameNames.length > 0;
+  
+  // Debug logging
+  useEffect(() => {
+    if (selectedAnimation) {
+      console.log('Animation selected:', selectedAnimation.name);
+      console.log('Packed sheet available:', !!packedSheet);
+      console.log('Spritesheet animations:', packedSheet?.spritesheet.animations);
+      console.log('Animation frame names:', animationFrameNames);
+      console.log('Fallback frames:', fallbackFrames.length);
+      console.log('Using spritesheet data:', usingSpritesheetData);
+    }
+  }, [selectedAnimation, packedSheet, animationFrameNames, fallbackFrames, usingSpritesheetData]);
 
   const drawCheckerboard = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, checkerSize: number = 8) => {
     const lightColor = '#ffffff';
@@ -56,12 +80,13 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
 
   // Animation loop
   const animate = useCallback((timestamp: number) => {
-    if (!isPlaying || animationFrames.length === 0) return;
+    const frameCount = usingSpritesheetData ? animationFrameNames.length : fallbackFrames.length;
+    if (!isPlaying || frameCount === 0) return;
 
     if (timestamp - lastFrameTimeRef.current >= speed) {
       setCurrentFrameIndex(prevIndex => {
         const nextIndex = prevIndex + 1;
-        if (nextIndex >= animationFrames.length) {
+        if (nextIndex >= frameCount) {
           if (loop) {
             return 0;
           } else {
@@ -77,11 +102,12 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
     if (isPlaying) {
       animationFrameRef.current = requestAnimationFrame(animate);
     }
-  }, [isPlaying, speed, animationFrames.length, loop]);
+  }, [isPlaying, speed, usingSpritesheetData, animationFrameNames.length, fallbackFrames.length, loop]);
 
   // Start/stop animation
   useEffect(() => {
-    if (isPlaying && animationFrames.length > 0) {
+    const frameCount = usingSpritesheetData ? animationFrameNames.length : fallbackFrames.length;
+    if (isPlaying && frameCount > 0) {
       lastFrameTimeRef.current = performance.now();
       animationFrameRef.current = requestAnimationFrame(animate);
     } else if (animationFrameRef.current !== null) {
@@ -93,17 +119,14 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isPlaying, animate, animationFrames.length]);
+  }, [isPlaying, animate, usingSpritesheetData, animationFrameNames.length, fallbackFrames.length]);
 
   // Draw current frame with zoom and pan
   const drawFrame = useCallback(() => {
-    if (!canvasRef.current || animationFrames.length === 0) return;
+    if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d')!;
-    const currentFrame = animationFrames[currentFrameIndex];
-
-    if (!currentFrame) return;
 
     // Set canvas size to container size
     const container = containerRef.current;
@@ -112,27 +135,64 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
       canvas.height = container.clientHeight;
     }
 
-    // Calculate display size with zoom
-    const displayWidth = currentFrame.width * zoom;
-    const displayHeight = currentFrame.height * zoom;
-
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Apply pan offset and center the image initially
-    const centerX = (canvas.width - displayWidth) / 2;
-    const centerY = (canvas.height - displayHeight) / 2;
-    const offsetX = centerX + pan.x;
-    const offsetY = centerY + pan.y;
+    // Use spritesheet data if available, otherwise fall back to original frames
+    if (usingSpritesheetData && packedSheet && animationFrameNames.length > 0) {
+      const currentFrameName = animationFrameNames[currentFrameIndex];
+      const frameData = packedSheet.spritesheet.frames[currentFrameName];
+      
+      if (!frameData) return;
 
-    // Draw checkerboard background
-    const checkerSize = Math.max(4, 8 * zoom); // Scale checker size with zoom
-    drawCheckerboard(ctx, offsetX, offsetY, displayWidth, displayHeight, checkerSize);
-    
-    // Draw frame
-    ctx.imageSmoothingEnabled = false; // Keep pixel art crisp
-    ctx.drawImage(currentFrame.image, offsetX, offsetY, displayWidth, displayHeight);
-  }, [animationFrames, currentFrameIndex, zoom, pan, drawCheckerboard]);
+      // Calculate display size with zoom
+      const displayWidth = frameData.sourceSize.w * zoom;
+      const displayHeight = frameData.sourceSize.h * zoom;
+
+      // Apply pan offset and center the image initially
+      const centerX = (canvas.width - displayWidth) / 2;
+      const centerY = (canvas.height - displayHeight) / 2;
+      const offsetX = centerX + pan.x;
+      const offsetY = centerY + pan.y;
+
+      // Draw checkerboard background
+      const checkerSize = Math.max(4, 8 * zoom);
+      drawCheckerboard(ctx, offsetX, offsetY, displayWidth, displayHeight, checkerSize);
+      
+      // Draw frame from spritesheet
+      ctx.imageSmoothingEnabled = false;
+      
+      // Calculate the position within the original frame size
+      const spriteX = offsetX + (frameData.spriteSourceSize.x * zoom);
+      const spriteY = offsetY + (frameData.spriteSourceSize.y * zoom);
+      const spriteWidth = frameData.frame.w * zoom;
+      const spriteHeight = frameData.frame.h * zoom;
+      
+      ctx.drawImage(
+        packedSheet.canvas,
+        frameData.frame.x, frameData.frame.y, frameData.frame.w, frameData.frame.h,
+        spriteX, spriteY, spriteWidth, spriteHeight
+      );
+    } else if (fallbackFrames.length > 0) {
+      // Fallback to original frame rendering
+      const currentFrame = fallbackFrames[currentFrameIndex];
+      if (!currentFrame) return;
+
+      const displayWidth = currentFrame.width * zoom;
+      const displayHeight = currentFrame.height * zoom;
+
+      const centerX = (canvas.width - displayWidth) / 2;
+      const centerY = (canvas.height - displayHeight) / 2;
+      const offsetX = centerX + pan.x;
+      const offsetY = centerY + pan.y;
+
+      const checkerSize = Math.max(4, 8 * zoom);
+      drawCheckerboard(ctx, offsetX, offsetY, displayWidth, displayHeight, checkerSize);
+      
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(currentFrame.image, offsetX, offsetY, displayWidth, displayHeight);
+    }
+  }, [usingSpritesheetData, packedSheet, animationFrameNames, currentFrameIndex, fallbackFrames, zoom, pan, drawCheckerboard]);
 
   useEffect(() => {
     drawFrame();
@@ -163,7 +223,8 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
 }, [containerRef.current, setZoom])
 
   const handlePlay = () => {
-    if (animationFrames.length > 0) {
+    const frameCount = usingSpritesheetData ? animationFrameNames.length : fallbackFrames.length;
+    if (frameCount > 0) {
       setIsPlaying(!isPlaying);
     }
   };
@@ -174,14 +235,16 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
   };
 
   const handlePrevFrame = () => {
+    const frameCount = usingSpritesheetData ? animationFrameNames.length : fallbackFrames.length;
     setCurrentFrameIndex(prev => 
-      prev > 0 ? prev - 1 : (loop ? animationFrames.length - 1 : 0)
+      prev > 0 ? prev - 1 : (loop ? frameCount - 1 : 0)
     );
   };
 
   const handleNextFrame = () => {
+    const frameCount = usingSpritesheetData ? animationFrameNames.length : fallbackFrames.length;
     setCurrentFrameIndex(prev => 
-      prev < animationFrames.length - 1 ? prev + 1 : (loop ? 0 : prev)
+      prev < frameCount - 1 ? prev + 1 : (loop ? 0 : prev)
     );
   };
 
@@ -276,15 +339,31 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
               ref={canvasRef}
               className="animation-canvas"
             />
-            {animationFrames.length === 0 && (
+            {!usingSpritesheetData && fallbackFrames.length === 0 && (
               <div className="no-frames">No valid frames found</div>
+            )}
+            {usingSpritesheetData && animationFrameNames.length === 0 && (
+              <div className="no-frames">No spritesheet frames found</div>
             )}
           </div>
 
           <div className="animation-info">
-            <span>Frame: {currentFrameIndex + 1} / {animationFrames.length}</span>
-            {animationFrames[currentFrameIndex] && (
-              <span>Current: {animationFrames[currentFrameIndex].name}</span>
+            {usingSpritesheetData ? (
+              <>
+                <span>Frame: {currentFrameIndex + 1} / {animationFrameNames.length}</span>
+                {animationFrameNames[currentFrameIndex] && (
+                  <span>Current: {animationFrameNames[currentFrameIndex]}</span>
+                )}
+                <span className="data-source">📊 Using Spritesheet Data</span>
+              </>
+            ) : (
+              <>
+                <span>Frame: {currentFrameIndex + 1} / {fallbackFrames.length}</span>
+                {fallbackFrames[currentFrameIndex] && (
+                  <span>Current: {fallbackFrames[currentFrameIndex].name}</span>
+                )}
+                <span className="data-source">🖼️ Using Original Frames</span>
+              </>
             )}
           </div>
 
@@ -383,4 +462,4 @@ export const AnimationPreview: React.FC<AnimationPreviewProps> = ({
       )}
     </div>
   );
-}; 
+};

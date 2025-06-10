@@ -341,6 +341,7 @@ function App() {
             <AnimationPreview
               animations={animations}
               frames={frames}
+              packedSheet={packedSheet}
             />
           </section>
         </div>
