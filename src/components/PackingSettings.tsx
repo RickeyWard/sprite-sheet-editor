@@ -120,28 +120,28 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
           />
         </div>
 
-        <div className="option-group checkbox-group important-option">
+        <div className="option-group radio-group">
+          <span className="radio-group-title">Sprite Dimensions:</span>
           <label>
             <input
-              type="checkbox"
+              type="radio"
+              name="trimWhitespace"
               checked={!options.trimWhitespace}
-              onChange={(e) => handleChange('trimWhitespace', !e.target.checked)}
+              onChange={() => handleChange('trimWhitespace', false)}
             />
-            <span className="checkbox-label">
+            <span className="radio-label">
               Keep original sprite dimensions
               <small>Don't trim transparent pixels - preserve exact image size</small>
             </span>
           </label>
-        </div>
-
-        <div className="option-group checkbox-group">
           <label>
             <input
-              type="checkbox"
+              type="radio"
+              name="trimWhitespace"
               checked={options.trimWhitespace}
-              onChange={(e) => handleChange('trimWhitespace', e.target.checked)}
+              onChange={() => handleChange('trimWhitespace', true)}
             />
-            <span className="checkbox-label">
+            <span className="radio-label">
               Trim transparent pixels
               <small>Remove empty space around sprites for efficiency</small>
             </span>

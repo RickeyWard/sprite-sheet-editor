@@ -1053,6 +1053,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .option-group label {
@@ -1120,7 +1121,56 @@ body {
 
 .checkbox-group input[type="checkbox"] {
   accent-color: #61dafb;
-  margin-top: 0.1rem;
+  margin-top: 0.38rem;
+  flex-shrink: 0;
+}
+
+.radio-group {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  padding: 0.75rem;
+  background: #333;
+}
+
+.radio-group-title {
+  font-weight: 500;
+  color: #61dafb;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.radio-group label {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 0.75rem;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+.radio-group label:last-child {
+  margin-bottom: 0;
+}
+
+.radio-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.radio-label small {
+  color: #888;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.radio-group input[type="radio"] {
+  accent-color: #61dafb;
+  margin-top: 0.38rem;
+  flex-shrink: 0;
 }
 
 .important-option {
