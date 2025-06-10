@@ -154,6 +154,22 @@ function App() {
     setSelectedFrames(new Set());
   };
 
+  const handleDeleteSelected = () => {
+    if (selectedFrames.size === 0) return;
+    
+    // Remove selected frames
+    setFrames(prev => prev.filter(f => !selectedFrames.has(f.id)));
+    
+    // Remove selected frames from animations
+    setAnimations(prev => prev.map(anim => ({
+      ...anim,
+      frameIds: anim.frameIds.filter(id => !selectedFrames.has(id))
+    })).filter(anim => anim.frameIds.length > 0));
+    
+    // Clear selection
+    setSelectedFrames(new Set());
+  };
+
   const processNextPendingFile = async () => {
     if (pendingFiles.length > 0) {
       const nextFile = pendingFiles[0];
@@ -250,6 +266,13 @@ function App() {
               </button>
               <button onClick={handleSelectNone} className="select-btn">
                 Select None
+              </button>
+              <button 
+                onClick={handleDeleteSelected} 
+                className="delete-selected-btn"
+                disabled={selectedFrames.size === 0}
+              >
+                🗑️ Delete Selected
               </button>
               <span className="selection-count">
                 {selectedFrames.size} of {frames.length} selected
