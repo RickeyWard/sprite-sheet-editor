@@ -6,8 +6,10 @@ import { SpritesheetPreview } from './components/SpritesheetPreview';
 import { CanvasSettings } from './components/CanvasSettings';
 import { AnimationPreview } from './components/AnimationPreview';
 import { PackingSettings } from './components/PackingSettings';
-import { createSpriteFrameFromFile } from './utils/imageLoader';
+import { SpriteStripSlicer } from './components/SpriteStripSlicer';
+import { createSpriteFrameFromFile, loadImageFromFile } from './utils/imageLoader';
 import { packSprites } from './utils/spritePacker';
+import { detectPotentialSpriteStrip } from './utils/spriteStripSlicer';
 import type { SpriteFrame, Animation, PackedSheet, PackingOptions } from './types';
 import './App.css';
 
@@ -26,6 +28,11 @@ function App() {
     padding: 1,
     allowRotation: false
   });
+  const [pendingSpriteStrip, setPendingSpriteStrip] = useState<{
+    image: HTMLImageElement;
+    file: File;
+  } | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   // Pack sprites whenever frames, animations, or canvas settings change
   useEffect(() => {
@@ -44,10 +51,42 @@ function App() {
   const handleFilesAdded = async (files: File[]) => {
     setIsLoading(true);
     try {
-      const newFrames = await Promise.all(
-        files.map(file => createSpriteFrameFromFile(file))
-      );
-      setFrames(prev => [...prev, ...newFrames]);
+      const regularFiles: File[] = [];
+      const spriteStripFiles: File[] = [];
+      
+      // Separate regular files from potential sprite strips
+      for (const file of files) {
+        const image = await loadImageFromFile(file);
+        
+        // Check if this might be a sprite strip
+        if (detectPotentialSpriteStrip(image)) {
+          spriteStripFiles.push(file);
+        } else {
+          regularFiles.push(file);
+        }
+      }
+      
+      // Process all regular files first
+      if (regularFiles.length > 0) {
+        const newFrames = await Promise.all(
+          regularFiles.map(file => createSpriteFrameFromFile(file))
+        );
+        setFrames(prev => [...prev, ...newFrames]);
+      }
+      
+      // Handle sprite strips one at a time
+      if (spriteStripFiles.length > 0) {
+        const firstSpriteStrip = spriteStripFiles[0];
+        const remainingSpriteStrips = spriteStripFiles.slice(1);
+        
+        // Set remaining sprite strips to be processed later
+        setPendingFiles(remainingSpriteStrips);
+        
+        // Show dialog for the first sprite strip
+        const image = await loadImageFromFile(firstSpriteStrip);
+        setPendingSpriteStrip({ image, file: firstSpriteStrip });
+      }
+      
     } catch (error) {
       console.error('Error loading files:', error);
       alert('Error loading some files. Please check they are valid PNG images.');
@@ -113,6 +152,65 @@ function App() {
 
   const handleSelectNone = () => {
     setSelectedFrames(new Set());
+  };
+
+  const processNextPendingFile = async () => {
+    if (pendingFiles.length > 0) {
+      const nextFile = pendingFiles[0];
+      const remainingFiles = pendingFiles.slice(1);
+      
+      setPendingFiles(remainingFiles);
+      
+      try {
+        const image = await loadImageFromFile(nextFile);
+        if (detectPotentialSpriteStrip(image)) {
+          setPendingSpriteStrip({ image, file: nextFile });
+        } else {
+          // Process as regular frame and continue
+          const frame = await createSpriteFrameFromFile(nextFile);
+          setFrames(prev => [...prev, frame]);
+          await processNextPendingFile();
+        }
+      } catch (error) {
+        console.error('Error processing pending file:', error);
+        await processNextPendingFile(); // Continue with next file
+      }
+    }
+  };
+
+  const handleSpriteStripSlice = async (slicedFrames: SpriteFrame[], createAnimation?: { name: string }) => {
+    setFrames(prev => [...prev, ...slicedFrames]);
+    
+    // Create animation if requested
+    if (createAnimation && slicedFrames.length > 0) {
+      const newAnimation = {
+        id: crypto.randomUUID(),
+        name: createAnimation.name,
+        frameIds: slicedFrames.map(frame => frame.id)
+      };
+      setAnimations(prev => [...prev, newAnimation]);
+    }
+    
+    setPendingSpriteStrip(null);
+    
+    // Process next pending sprite strip if any
+    await processNextPendingFile();
+  };
+
+  const handleSpriteStripCancel = async () => {
+    setPendingSpriteStrip(null);
+    // Process next pending sprite strip if any
+    await processNextPendingFile();
+  };
+
+  const handleSpriteStripKeepOriginal = async () => {
+    if (pendingSpriteStrip) {
+      const frame = await createSpriteFrameFromFile(pendingSpriteStrip.file);
+      setFrames(prev => [...prev, frame]);
+      setPendingSpriteStrip(null);
+      // Process next pending sprite strip if any
+      await processNextPendingFile();
+    }
   };
 
   return (
@@ -192,6 +290,16 @@ function App() {
           </section>
         </div>
       </main>
+
+      {pendingSpriteStrip && (
+        <SpriteStripSlicer
+          image={pendingSpriteStrip.image}
+          baseName={pendingSpriteStrip.file.name.replace(/\.[^/.]+$/, '')}
+          onSlice={handleSpriteStripSlice}
+          onCancel={handleSpriteStripCancel}
+          onKeepOriginal={handleSpriteStripKeepOriginal}
+        />
+      )}
     </div>
   );
 }
