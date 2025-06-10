@@ -5,9 +5,10 @@ import { AnimationManager } from './components/AnimationManager';
 import { SpritesheetPreview } from './components/SpritesheetPreview';
 import { CanvasSettings } from './components/CanvasSettings';
 import { AnimationPreview } from './components/AnimationPreview';
+import { PackingSettings } from './components/PackingSettings';
 import { createSpriteFrameFromFile } from './utils/imageLoader';
 import { packSprites } from './utils/spritePacker';
-import type { SpriteFrame, Animation, PackedSheet } from './types';
+import type { SpriteFrame, Animation, PackedSheet, PackingOptions } from './types';
 import './App.css';
 
 function App() {
@@ -18,16 +19,27 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [maxWidth, setMaxWidth] = useState(512);
   const [maxHeight, setMaxHeight] = useState(512);
+  const [packingOptions, setPackingOptions] = useState<PackingOptions>({
+    spacing: 2,
+    trimWhitespace: false,
+    forcePowerOf2: true,
+    padding: 1,
+    allowRotation: false
+  });
 
   // Pack sprites whenever frames, animations, or canvas settings change
   useEffect(() => {
-    if (frames.length > 0) {
-      const packed = packSprites(frames, animations, maxWidth, maxHeight);
-      setPackedSheet(packed);
-    } else {
-      setPackedSheet(null);
-    }
-  }, [frames, animations, maxWidth, maxHeight]);
+    const packSpritesAsync = async () => {
+      if (frames.length > 0) {
+        const packed = await packSprites(frames, animations, maxWidth, maxHeight, packingOptions);
+        setPackedSheet(packed);
+      } else {
+        setPackedSheet(null);
+      }
+    };
+    
+    packSpritesAsync();
+  }, [frames, animations, maxWidth, maxHeight, packingOptions]);
 
   const handleFilesAdded = async (files: File[]) => {
     setIsLoading(true);
@@ -123,6 +135,13 @@ function App() {
               maxHeight={maxHeight}
               onMaxWidthChange={setMaxWidth}
               onMaxHeightChange={setMaxHeight}
+            />
+          </section>
+
+          <section className="packing-settings-section">
+            <PackingSettings
+              options={packingOptions}
+              onOptionsChange={setPackingOptions}
             />
           </section>
 

@@ -74,6 +74,24 @@ export const SpriteList: React.FC<SpriteListProps> = ({
                     const h = frame.height * scale;
                     canvas.width = w;
                     canvas.height = h;
+                    
+                    // Draw checkerboard background
+                    const checkerSize = Math.max(4, 8 * scale);
+                    const lightColor = '#ffffff';
+                    const darkColor = '#cccccc';
+                    const numCols = Math.ceil(w / checkerSize);
+                    const numRows = Math.ceil(h / checkerSize);
+                    
+                    for (let row = 0; row < numRows; row++) {
+                      for (let col = 0; col < numCols; col++) {
+                        const isEven = (row + col) % 2 === 0;
+                        ctx.fillStyle = isEven ? lightColor : darkColor;
+                        ctx.fillRect(col * checkerSize, row * checkerSize, checkerSize, checkerSize);
+                      }
+                    }
+                    
+                    // Draw the frame on top
+                    ctx.imageSmoothingEnabled = false;
                     ctx.drawImage(frame.image, 0, 0, w, h);
                   }
                 }}

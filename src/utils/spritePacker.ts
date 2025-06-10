@@ -1,4 +1,5 @@
-import type { SpriteFrame, PackedSheet, PixiSpritesheet, Animation } from '../types';
+import type { SpriteFrame, PackedSheet, PixiSpritesheet, Animation, PackingOptions } from '../types';
+import { createTrimmedSpriteAsync, addPaddingToSprite } from './imageTrimmer';
 
 interface PackedRect {
   x: number;
@@ -80,16 +81,51 @@ interface Node {
   down: Node | null;
 }
 
-export function packSprites(frames: SpriteFrame[], animations: Animation[], maxWidth: number = 2048, maxHeight: number = 2048): PackedSheet | null {
+export async function packSprites(
+  frames: SpriteFrame[], 
+  animations: Animation[], 
+  maxWidth: number = 2048, 
+  maxHeight: number = 2048, 
+  options: PackingOptions = {
+    spacing: 2,
+    trimWhitespace: false,
+    forcePowerOf2: true,
+    padding: 1,
+    allowRotation: false
+  }
+): Promise<PackedSheet | null> {
   if (frames.length === 0) return null;
 
-  // Calculate optimal canvas size
-  const totalArea = frames.reduce((sum, frame) => sum + frame.width * frame.height, 0);
-  const maxDimension = Math.max(...frames.map(f => Math.max(f.width, f.height)));
+  // Process frames based on options
+  let processedFrames = frames;
+  
+  if (options.trimWhitespace) {
+    // Trim whitespace from all frames
+    processedFrames = await Promise.all(
+      frames.map(frame => createTrimmedSpriteAsync(frame, options.padding))
+    );
+  } else if (options.padding > 0) {
+    // Apply padding without trimming
+    processedFrames = await Promise.all(
+      frames.map(frame => addPaddingToSprite(frame, options.padding))
+    );
+  }
+
+  // Calculate optimal canvas size including spacing
+  const spacedFrames = processedFrames.map(frame => ({
+    ...frame,
+    width: frame.width + options.spacing,
+    height: frame.height + options.spacing
+  }));
+  
+  const totalArea = spacedFrames.reduce((sum, frame) => sum + frame.width * frame.height, 0);
+  const maxDimension = Math.max(...spacedFrames.map(f => Math.max(f.width, f.height)));
   let size = Math.max(Math.ceil(Math.sqrt(totalArea)), maxDimension);
   
-  // Round up to next power of 2
-  size = Math.pow(2, Math.ceil(Math.log2(size)));
+  if (options.forcePowerOf2) {
+    // Round up to next power of 2
+    size = Math.pow(2, Math.ceil(Math.log2(size)));
+  }
   
   // Ensure we don't exceed max dimensions
   size = Math.min(size, Math.min(maxWidth, maxHeight));
@@ -102,16 +138,20 @@ export function packSprites(frames: SpriteFrame[], animations: Animation[], maxW
   let currentHeight = size;
 
   // Try packing with increasing canvas sizes
-  while (packed.length < frames.length && attempts < maxAttempts) {
+  while (packed.length < spacedFrames.length && attempts < maxAttempts) {
     const packer = new BinPacker(currentWidth, currentHeight);
-    packed = packer.pack(frames);
+    packed = packer.pack(spacedFrames);
     
-    if (packed.length < frames.length) {
+    if (packed.length < spacedFrames.length) {
       // Try expanding width first, then height
       if (currentWidth < maxWidth && (currentWidth <= currentHeight || currentHeight >= maxHeight)) {
-        currentWidth = Math.min(currentWidth * 2, maxWidth);
+        currentWidth = options.forcePowerOf2 
+          ? Math.min(currentWidth * 2, maxWidth)
+          : Math.min(Math.ceil(currentWidth * 1.5), maxWidth);
       } else if (currentHeight < maxHeight) {
-        currentHeight = Math.min(currentHeight * 2, maxHeight);
+        currentHeight = options.forcePowerOf2
+          ? Math.min(currentHeight * 2, maxHeight)
+          : Math.min(Math.ceil(currentHeight * 1.5), maxHeight);
       } else {
         // Can't expand further, break
         break;
@@ -120,7 +160,7 @@ export function packSprites(frames: SpriteFrame[], animations: Animation[], maxW
     attempts++;
   }
 
-  if (packed.length < frames.length) {
+  if (packed.length < spacedFrames.length) {
     console.error('Could not pack all sprites');
     return null;
   }
@@ -138,26 +178,38 @@ export function packSprites(frames: SpriteFrame[], animations: Animation[], maxW
 
   // Draw each sprite and record its position
   for (const rect of packed) {
-    ctx.drawImage(rect.frame.image, rect.x, rect.y);
+    const originalFrame = frames.find(f => f.id === rect.frame.id);
+    if (!originalFrame) continue;
+    
+    // Draw the actual image (without spacing)
+    const drawWidth = rect.frame.width - options.spacing;
+    const drawHeight = rect.frame.height - options.spacing;
+    ctx.drawImage(rect.frame.image, rect.x, rect.y, drawWidth, drawHeight);
+    
+    // Handle trimmed vs non-trimmed sprites and padding
+    const isTrimmed = options.trimWhitespace && 'trimData' in rect.frame;
+    const isPadded = !isTrimmed && options.padding > 0;
+    const trimData = isTrimmed ? (rect.frame as any).trimData : null;
+    const originalSize = isTrimmed ? (rect.frame as any).originalSize : { width: originalFrame.width, height: originalFrame.height };
     
     spritesheetFrames[rect.frame.name] = {
       frame: {
         x: rect.x,
         y: rect.y,
-        w: rect.width,
-        h: rect.height
+        w: drawWidth,
+        h: drawHeight
       },
       rotated: false,
-      trimmed: false,
+      trimmed: isTrimmed,
       spriteSourceSize: {
-        x: 0,
-        y: 0,
-        w: rect.width,
-        h: rect.height
+        x: trimData ? trimData.x : (isPadded ? -options.padding : 0),
+        y: trimData ? trimData.y : (isPadded ? -options.padding : 0),
+        w: drawWidth,
+        h: drawHeight
       },
       sourceSize: {
-        w: rect.width,
-        h: rect.height
+        w: originalSize.width,
+        h: originalSize.height
       }
     };
   }
