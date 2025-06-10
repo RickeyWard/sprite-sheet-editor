@@ -7,7 +7,7 @@ import { CanvasSettings } from './components/CanvasSettings';
 import { AnimationPreview } from './components/AnimationPreview';
 import { PackingSettings } from './components/PackingSettings';
 import { SpriteStripSlicer } from './components/SpriteStripSlicer';
-import { createSpriteFrameFromFile, loadImageFromFile } from './utils/imageLoader';
+import { createSpriteFrameFromFile, loadImageFromFile, downloadCanvas } from './utils/imageLoader';
 import { packSprites } from './utils/spritePacker';
 import { detectPotentialSpriteStrip } from './utils/spriteStripSlicer';
 import type { SpriteFrame, Animation, PackedSheet, PackingOptions } from './types';
@@ -22,10 +22,10 @@ function App() {
   const [maxWidth, setMaxWidth] = useState(512);
   const [maxHeight, setMaxHeight] = useState(512);
   const [packingOptions, setPackingOptions] = useState<PackingOptions>({
-    spacing: 2,
+    spacing: 0,
     trimWhitespace: false,
-    forcePowerOf2: true,
-    padding: 1,
+    forcePowerOf2: false,
+    padding: 0,
     allowRotation: false
   });
   const [pendingSpriteStrip, setPendingSpriteStrip] = useState<{
@@ -170,6 +170,31 @@ function App() {
     setSelectedFrames(new Set());
   };
 
+  const handleDownloadSelected = () => {
+    if (selectedFrames.size === 0) return;
+    
+    const selectedFrameObjects = frames.filter(frame => selectedFrames.has(frame.id));
+    
+    selectedFrameObjects.forEach((frame, index) => {
+      // Create a canvas for this frame
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Set canvas size to frame size
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+      
+      // Draw the frame
+      ctx.drawImage(frame.image, 0, 0);
+      
+      // Download with a slight delay to avoid overwhelming the browser
+      setTimeout(() => {
+        downloadCanvas(canvas, `${frame.name}.png`);
+      }, index * 100); // 100ms delay between downloads
+    });
+  };
+
   const processNextPendingFile = async () => {
     if (pendingFiles.length > 0) {
       const nextFile = pendingFiles[0];
@@ -273,6 +298,13 @@ function App() {
                 disabled={selectedFrames.size === 0}
               >
                 🗑️ Delete Selected
+              </button>
+              <button 
+                onClick={handleDownloadSelected} 
+                className="download-selected-btn"
+                disabled={selectedFrames.size === 0}
+              >
+                📥 Download Selected
               </button>
               <span className="selection-count">
                 {selectedFrames.size} of {frames.length} selected

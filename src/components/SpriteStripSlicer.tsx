@@ -22,6 +22,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
   const [previewCanvas, setPreviewCanvas] = useState<HTMLCanvasElement | null>(null);
   const [createAnimation, setCreateAnimation] = useState(true);
   const [animationName, setAnimationName] = useState(baseName);
+  const [editableBaseName, setEditableBaseName] = useState(baseName);
 
   useEffect(() => {
     // Create preview canvas
@@ -72,7 +73,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
 
   const handleSlice = async () => {
     try {
-      const frames = await sliceSpriteStrip(image, config, baseName);
+      const frames = await sliceSpriteStrip(image, config, editableBaseName);
       const animationOption = createAnimation && animationName.trim() 
         ? { name: animationName.trim() } 
         : undefined;
@@ -112,142 +113,160 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
         </p>
         
         <div className="slicer-content">
-          <div className="preview-section">
-            <h4>Preview</h4>
-            <div className="preview-container">
-              {previewCanvas && (
-                <canvas
-                  ref={(ref) => {
-                    if (ref && previewCanvas) {
-                      const ctx = ref.getContext('2d');
-                      if (ctx) {
-                        ref.width = previewCanvas.width;
-                        ref.height = previewCanvas.height;
-                        ctx.drawImage(previewCanvas, 0, 0);
-                      }
-                    }
-                  }}
-                  className="slice-preview"
+          <div className="base-name-section">
+            <h4>Frame Naming</h4>
+            <div className="config-item">
+              <label>
+                Base Name:
+                <input
+                  type="text"
+                  value={editableBaseName}
+                  onChange={(e) => setEditableBaseName(e.target.value)}
+                  placeholder="Enter base name for frames"
                 />
-              )}
+              </label>
             </div>
           </div>
           
-          <div className="config-section">
-            <h4>Configuration</h4>
-            
-            <div className="config-grid">
-              <div className="config-item">
-                <label>
-                  Columns:
-                  <input
-                    type="number"
-                    min="1"
-                    max="32"
-                    value={config.columns}
-                    onChange={(e) => updateConfig({ columns: parseInt(e.target.value) || 1 })}
+          <div className="grid-content">
+            <div className="preview-section">
+              <h4>Preview</h4>
+              <div className="preview-container">
+                {previewCanvas && (
+                  <canvas
+                    ref={(ref) => {
+                      if (ref && previewCanvas) {
+                        const ctx = ref.getContext('2d');
+                        if (ctx) {
+                          ref.width = previewCanvas.width;
+                          ref.height = previewCanvas.height;
+                          ctx.drawImage(previewCanvas, 0, 0);
+                        }
+                      }
+                    }}
+                    className="slice-preview"
                   />
-                </label>
-              </div>
-              
-              <div className="config-item">
-                <label>
-                  Rows:
-                  <input
-                    type="number"
-                    min="1"
-                    max="32"
-                    value={config.rows}
-                    onChange={(e) => updateConfig({ rows: parseInt(e.target.value) || 1 })}
-                  />
-                </label>
-              </div>
-              
-              <div className="config-item">
-                <label>
-                  Frame Width:
-                  <input
-                    type="number"
-                    min="1"
-                    max={image.width}
-                    value={config.frameWidth}
-                    onChange={(e) => updateConfig({ frameWidth: parseInt(e.target.value) || 1 })}
-                  />
-                </label>
-              </div>
-              
-              <div className="config-item">
-                <label>
-                  Frame Height:
-                  <input
-                    type="number"
-                    min="1"
-                    max={image.height}
-                    value={config.frameHeight}
-                    onChange={(e) => updateConfig({ frameHeight: parseInt(e.target.value) || 1 })}
-                  />
-                </label>
-              </div>
-              
-              <div className="config-item">
-                <label>
-                  Spacing:
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={config.spacing}
-                    onChange={(e) => updateConfig({ spacing: parseInt(e.target.value) || 0 })}
-                  />
-                </label>
-              </div>
-              
-              <div className="config-item">
-                <label>
-                  Margin:
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={config.margin}
-                    onChange={(e) => updateConfig({ margin: parseInt(e.target.value) || 0 })}
-                  />
-                </label>
+                )}
               </div>
             </div>
             
-            <div className="config-info">
-              <p><strong>Total frames:</strong> {totalFrames}</p>
-              <p><strong>Image size:</strong> {image.width} × {image.height}</p>
-              <p><strong>Frame size:</strong> {config.frameWidth} × {config.frameHeight}</p>
-            </div>
-            
-            <div className="animation-options">
-              <h4>Animation</h4>
-              <div className="animation-checkbox">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={createAnimation}
-                    onChange={(e) => setCreateAnimation(e.target.checked)}
-                  />
-                  Create animation from frames
-                </label>
-              </div>
+            <div className="config-section">
+              <h4>Configuration</h4>
               
-              {createAnimation && (
-                <div className="animation-name-input">
+              <div className="config-grid">
+                <div className="config-item">
                   <label>
-                    Animation name:
+                    Columns:
                     <input
-                      type="text"
-                      value={animationName}
-                      onChange={(e) => setAnimationName(e.target.value)}
-                      placeholder="Enter animation name"
+                      type="number"
+                      min="1"
+                      max="32"
+                      value={config.columns}
+                      onChange={(e) => updateConfig({ columns: parseInt(e.target.value) || 1 })}
                     />
                   </label>
                 </div>
-              )}
+                
+                <div className="config-item">
+                  <label>
+                    Rows:
+                    <input
+                      type="number"
+                      min="1"
+                      max="32"
+                      value={config.rows}
+                      onChange={(e) => updateConfig({ rows: parseInt(e.target.value) || 1 })}
+                    />
+                  </label>
+                </div>
+                
+                <div className="config-item">
+                  <label>
+                    Frame Width:
+                    <input
+                      type="number"
+                      min="1"
+                      max={image.width}
+                      value={config.frameWidth}
+                      onChange={(e) => updateConfig({ frameWidth: parseInt(e.target.value) || 1 })}
+                    />
+                  </label>
+                </div>
+                
+                <div className="config-item">
+                  <label>
+                    Frame Height:
+                    <input
+                      type="number"
+                      min="1"
+                      max={image.height}
+                      value={config.frameHeight}
+                      onChange={(e) => updateConfig({ frameHeight: parseInt(e.target.value) || 1 })}
+                    />
+                  </label>
+                </div>
+                
+                <div className="config-item">
+                  <label>
+                    Spacing:
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={config.spacing}
+                      onChange={(e) => updateConfig({ spacing: parseInt(e.target.value) || 0 })}
+                    />
+                  </label>
+                </div>
+                
+                <div className="config-item">
+                  <label>
+                    Margin:
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={config.margin}
+                      onChange={(e) => updateConfig({ margin: parseInt(e.target.value) || 0 })}
+                    />
+                  </label>
+                </div>
+              </div>
+              
+              <div className="config-info">
+                <p><strong>Total frames:</strong> {totalFrames}</p>
+                <p><strong>Image size:</strong> {image.width} × {image.height}</p>
+                <p><strong>Frame size:</strong> {config.frameWidth} × {config.frameHeight}</p>
+                <p><strong>Frame names:</strong> {editableBaseName}_01, {editableBaseName}_02, {editableBaseName}_03...</p>
+              </div>
+              
+              <div className="animation-options">
+                <h4>Animation</h4>
+                <div className="animation-checkbox">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={createAnimation}
+                      onChange={(e) => setCreateAnimation(e.target.checked)}
+                    />
+                    Create animation from frames
+                  </label>
+                </div>
+                
+                {createAnimation && (
+                  <div className="animation-name-input">
+                    <label>
+                      Animation name:
+                      <input
+                        type="text"
+                        value={animationName}
+                        onChange={(e) => setAnimationName(e.target.value)}
+                        placeholder="Enter animation name"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -262,7 +281,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
           <button 
             className="slice-btn" 
             onClick={handleSlice}
-            disabled={totalFrames === 0 || (createAnimation && !animationName.trim())}
+            disabled={totalFrames === 0 || !editableBaseName.trim() || (createAnimation && !animationName.trim())}
           >
             {createAnimation 
               ? `Slice & Create "${animationName}" Animation` 
