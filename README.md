@@ -2,6 +2,8 @@
 
 A modern web-based sprite sheet packer designed specifically for **PixiJS** game development. Create optimized texture atlases from individual sprite images with customizable packing options and real-time preview.
 
+Try it now: [Sprite Sheet Editor](https://rickeyward.github.io/sprite-sheet-editor/)
+
 ## 🤖 AI-Assisted Development Experiment
 
 **This entire project was built using only AI prompting** through Cursor IDE with Claude Sonnet 4.0. No traditional coding was performed - every line of code, styling, and feature was generated through conversational AI assistance. This represents an experiment to understand the current state of AI-assisted development and explore what's possible when achieving real-world goals through pure AI collaboration.
