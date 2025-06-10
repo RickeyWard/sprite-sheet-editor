@@ -12,8 +12,13 @@ interface PackedRect {
 // Simple bin packing algorithm
 class BinPacker {
   private root: Node | null = null;
+  private width: number;
+  private height: number;
 
-  constructor(private width: number, private height: number) {}
+  constructor(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+  }
 
   pack(frames: SpriteFrame[]): PackedRect[] {
     this.root = { x: 0, y: 0, width: this.width, height: this.height, used: false, right: null, down: null };

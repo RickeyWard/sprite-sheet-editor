@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { SpriteList } from './components/SpriteList';
 import { AnimationManager } from './components/AnimationManager';

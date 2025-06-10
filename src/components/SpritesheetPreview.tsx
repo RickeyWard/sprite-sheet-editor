@@ -9,7 +9,6 @@ interface SpritesheetPreviewProps {
 export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSheet }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
