@@ -26,7 +26,8 @@ function App() {
     spacing: 0,
     trimWhitespace: false,
     forcePowerOf2: false,
-    allowRotation: false
+    allowRotation: false,
+    layout: 'compact'
   });
   const [pendingSpriteStrip, setPendingSpriteStrip] = useState<{
     image: HTMLImageElement;

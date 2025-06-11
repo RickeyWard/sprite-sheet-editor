@@ -10,7 +10,7 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
   options,
   onOptionsChange
 }) => {
-  const handleChange = (key: keyof PackingOptions, value: number | boolean) => {
+  const handleChange = (key: keyof PackingOptions, value: number | boolean | string) => {
     onOptionsChange({
       ...options,
       [key]: value
@@ -23,25 +23,29 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
         spacing: 0,
         trimWhitespace: true,
         forcePowerOf2: true,
-        allowRotation: false
+        allowRotation: false,
+        layout: 'compact'
       },
       standard: {
         spacing: 2,
         trimWhitespace: false,
         forcePowerOf2: true,
-        allowRotation: false
+        allowRotation: false,
+        layout: 'compact'
       },
       loose: {
         spacing: 4,
         trimWhitespace: false,
         forcePowerOf2: false,
-        allowRotation: false
+        allowRotation: false,
+        layout: 'compact'
       },
       preserve: {
         spacing: 0,
         trimWhitespace: false,
         forcePowerOf2: false,
-        allowRotation: false
+        allowRotation: false,
+        layout: 'compact'
       }
     };
     onOptionsChange(presets[preset]);
@@ -101,7 +105,6 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
         </div>
 
 
-
         <div className="option-group radio-group">
           <span className="radio-group-title">Sprite Dimensions:</span>
           <label>
@@ -126,6 +129,46 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
             <span className="radio-label">
               Trim transparent pixels
               <small>Remove empty space around sprites for efficiency</small>
+            </span>
+          </label>
+        </div>
+
+        <div className="option-group radio-group">
+          <span className="radio-group-title">Packing Layout:</span>
+          <label>
+            <input
+              type="radio"
+              name="layout"
+              checked={options.layout === 'compact'}
+              onChange={() => handleChange('layout', 'compact')}
+            />
+            <span className="radio-label">
+              Compact
+              <small>Optimal space usage with bin packing algorithm</small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="layout"
+              checked={options.layout === 'horizontal'}
+              onChange={() => handleChange('layout', 'horizontal')}
+            />
+            <span className="radio-label">
+              Horizontal
+              <small>Arrange sprites in rows from left to right</small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="layout"
+              checked={options.layout === 'vertical'}
+              onChange={() => handleChange('layout', 'vertical')}
+            />
+            <span className="radio-label">
+              Vertical
+              <small>Arrange sprites in columns from top to bottom</small>
             </span>
           </label>
         </div>
@@ -165,6 +208,7 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
         </div>
         <div className="info-item">
           <span>Spacing: {options.spacing}px</span>
+          <span>Layout: {options.layout}</span>
         </div>
         <div className="info-item">
           <span>Original size: {options.trimWhitespace ? 'No' : 'Yes'}</span>

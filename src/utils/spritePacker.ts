@@ -86,6 +86,90 @@ interface Node {
   down: Node | null;
 }
 
+// Horizontal layout - arrange sprites in rows
+function packHorizontal(
+  frames: SpriteFrame[],
+  initialWidth: number,
+  initialHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+  options: PackingOptions
+): PackedRect[] {
+  const packed: PackedRect[] = [];
+  let currentX = 0;
+  let currentY = 0;
+  let rowHeight = 0;
+
+  for (const frame of frames) {
+    // Check if we need to start a new row
+    if (currentX + frame.width > maxWidth && currentX > 0) {
+      currentX = 0;
+      currentY += rowHeight;
+      rowHeight = 0;
+    }
+
+    // Check if we exceed max height
+    if (currentY + frame.height > maxHeight) {
+      break; // Can't fit more sprites
+    }
+
+    packed.push({
+      x: currentX,
+      y: currentY,
+      width: frame.width,
+      height: frame.height,
+      frame
+    });
+
+    currentX += frame.width;
+    rowHeight = Math.max(rowHeight, frame.height);
+  }
+
+  return packed;
+}
+
+// Vertical layout - arrange sprites in columns
+function packVertical(
+  frames: SpriteFrame[],
+  initialWidth: number,
+  initialHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+  options: PackingOptions
+): PackedRect[] {
+  const packed: PackedRect[] = [];
+  let currentX = 0;
+  let currentY = 0;
+  let columnWidth = 0;
+
+  for (const frame of frames) {
+    // Check if we need to start a new column
+    if (currentY + frame.height > maxHeight && currentY > 0) {
+      currentY = 0;
+      currentX += columnWidth;
+      columnWidth = 0;
+    }
+
+    // Check if we exceed max width
+    if (currentX + frame.width > maxWidth) {
+      break; // Can't fit more sprites
+    }
+
+    packed.push({
+      x: currentX,
+      y: currentY,
+      width: frame.width,
+      height: frame.height,
+      frame
+    });
+
+    currentY += frame.height;
+    columnWidth = Math.max(columnWidth, frame.width);
+  }
+
+  return packed;
+}
+
 export async function packSprites(
   frames: SpriteFrame[], 
   animations: Animation[], 
@@ -95,7 +179,8 @@ export async function packSprites(
     spacing: 2,
     trimWhitespace: false,
     forcePowerOf2: true,
-    allowRotation: false
+    allowRotation: false,
+    layout: 'compact'
   }
 ): Promise<PackedSheet | null> {
   if (frames.length === 0) return null;
@@ -136,27 +221,34 @@ export async function packSprites(
   let currentWidth = size;
   let currentHeight = size;
 
-  // Try packing with increasing canvas sizes
-  while (packed.length < spacedFrames.length && attempts < maxAttempts) {
-    const packer = new BinPacker(currentWidth, currentHeight);
-    packed = packer.pack(spacedFrames);
-    
-    if (packed.length < spacedFrames.length) {
-      // Try expanding width first, then height
-      if (currentWidth < maxWidth && (currentWidth <= currentHeight || currentHeight >= maxHeight)) {
-        currentWidth = options.forcePowerOf2 
-          ? Math.min(currentWidth * 2, maxWidth)
-          : Math.min(Math.ceil(currentWidth * 1.5), maxWidth);
-      } else if (currentHeight < maxHeight) {
-        currentHeight = options.forcePowerOf2
-          ? Math.min(currentHeight * 2, maxHeight)
-          : Math.min(Math.ceil(currentHeight * 1.5), maxHeight);
-      } else {
-        // Can't expand further, break
-        break;
+  // Pack sprites using the selected layout algorithm
+  if (options.layout === 'horizontal') {
+    packed = packHorizontal(spacedFrames, currentWidth, currentHeight, maxWidth, maxHeight, options);
+  } else if (options.layout === 'vertical') {
+    packed = packVertical(spacedFrames, currentWidth, currentHeight, maxWidth, maxHeight, options);
+  } else {
+    // Compact layout - try packing with increasing canvas sizes
+    while (packed.length < spacedFrames.length && attempts < maxAttempts) {
+      const packer = new BinPacker(currentWidth, currentHeight);
+      packed = packer.pack(spacedFrames);
+      
+      if (packed.length < spacedFrames.length) {
+        // Try expanding width first, then height
+        if (currentWidth < maxWidth && (currentWidth <= currentHeight || currentHeight >= maxHeight)) {
+          currentWidth = options.forcePowerOf2 
+            ? Math.min(currentWidth * 2, maxWidth)
+            : Math.min(Math.ceil(currentWidth * 1.5), maxWidth);
+        } else if (currentHeight < maxHeight) {
+          currentHeight = options.forcePowerOf2
+            ? Math.min(currentHeight * 2, maxHeight)
+            : Math.min(Math.ceil(currentHeight * 1.5), maxHeight);
+        } else {
+          // Can't expand further, break
+          break;
+        }
       }
+      attempts++;
     }
-    attempts++;
   }
 
   if (packed.length < spacedFrames.length) {
