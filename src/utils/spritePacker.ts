@@ -202,6 +202,8 @@ function packByAnimation(
   // Add orphaned frames (not part of any animation) as a separate group
   const orphanedFrames = frames.filter(frame => !usedFrameIds.has(frame.id));
   if (orphanedFrames.length > 0) {
+    // Sort orphaned frames by name
+    orphanedFrames.sort((a, b) => a.name.localeCompare(b.name));
     animationFrames.push({ 
       animation: { id: 'orphaned', name: 'Individual Frames', frameIds: [] }, 
       frames: orphanedFrames 
@@ -261,8 +263,20 @@ export async function packSprites(
 ): Promise<PackedSheet | null> {
   if (frames.length === 0) return null;
 
+  // Sort frames and animations based on layout
+  let sortedFrames = [...frames];
+  let sortedAnimations = [...animations];
+  
+  if (options.layout === 'by-animation') {
+    // Sort animations by name
+    sortedAnimations.sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    // For other layouts, sort frames by name
+    sortedFrames.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   // Process frames based on options
-  let processedFrames = frames;
+  let processedFrames = sortedFrames;
   
   if (options.trimWhitespace) {
     // Trim whitespace from all frames
@@ -303,7 +317,7 @@ export async function packSprites(
   } else if (options.layout === 'vertical') {
     packed = packVertical(spacedFrames, currentWidth, currentHeight, maxWidth, maxHeight, options);
   } else if (options.layout === 'by-animation') {
-    packed = packByAnimation(spacedFrames, animations, currentWidth, currentHeight, maxWidth, maxHeight, options);
+    packed = packByAnimation(spacedFrames, sortedAnimations, currentWidth, currentHeight, maxWidth, maxHeight, options);
   } else {
     // Compact layout - try packing with increasing canvas sizes
     while (packed.length < spacedFrames.length && attempts < maxAttempts) {
@@ -412,7 +426,7 @@ export async function packSprites(
 
   // Create animations mapping
   const animationsMap: Record<string, string[]> = {};
-  for (const animation of animations) {
+  for (const animation of sortedAnimations) {
     const frameNames = animation.frameIds
       .map(id => frames.find(f => f.id === id)?.name)
       .filter(Boolean) as string[];
