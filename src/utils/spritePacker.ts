@@ -213,6 +213,26 @@ export async function packSprites(
     const trimData = isTrimmed ? (rect.frame as any).trimData : null;
     const originalSize = isTrimmed ? (rect.frame as any).originalSize : { width: originalFrame.width, height: originalFrame.height };
     
+    // Rotation should be based on current packing settings, not imported data
+    const rotated = false; // TODO: implement rotation based on options.allowRotation
+    
+    // Trimmed state: use current processing state, not imported state
+    const trimmed = isTrimmed;
+    
+    // Use original sprite dimensions
+    const sourceSize = {
+      w: originalSize.width,
+      h: originalSize.height
+    };
+    
+    // Always recompute spriteSourceSize based on current packing/trimming
+    const spriteSourceSize = {
+      x: trimData ? trimData.x : (isPadded ? -options.padding : 0),
+      y: trimData ? trimData.y : (isPadded ? -options.padding : 0),
+      w: drawWidth,
+      h: drawHeight
+    };
+    
     spritesheetFrames[rect.frame.name] = {
       frame: {
         x: rect.x,
@@ -220,18 +240,10 @@ export async function packSprites(
         w: drawWidth,
         h: drawHeight
       },
-      rotated: false,
-      trimmed: isTrimmed,
-      spriteSourceSize: {
-        x: trimData ? trimData.x : (isPadded ? -options.padding : 0),
-        y: trimData ? trimData.y : (isPadded ? -options.padding : 0),
-        w: drawWidth,
-        h: drawHeight
-      },
-      sourceSize: {
-        w: originalSize.width,
-        h: originalSize.height
-      }
+      rotated,
+      trimmed,
+      spriteSourceSize,
+      sourceSize
     };
   }
 

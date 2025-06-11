@@ -7,14 +7,17 @@ interface FileUploadProps {
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onFilesAdded }) => {
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const imageFiles = acceptedFiles.filter(file => file.type.startsWith('image/png'));
-    onFilesAdded(imageFiles);
+    const validFiles = acceptedFiles.filter(file => 
+      file.type.startsWith('image/png') || file.type === 'application/json'
+    );
+    onFilesAdded(validFiles);
   }, [onFilesAdded]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/png': ['.png']
+      'image/png': ['.png'],
+      'application/json': ['.json']
     },
     multiple: true
   });
@@ -28,10 +31,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFilesAdded }) => {
       <div className="dropzone-content">
         <div className="upload-icon">📁</div>
         {isDragActive ? (
-          <p>Drop PNG files here...</p>
+          <p>Drop PNG or JSON files here...</p>
         ) : (
           <div>
-            <p>Drag and drop PNG files here, or click to select</p>
+            <p>Drag and drop PNG or JSON files here, or click to select</p>
+            <div className="file-format-info">
+              <small>
+                • PNG images: Individual sprite frames<br/>
+                • JSON files: With base64 images or frame data<br/>
+                • PNG + JSON pairs: TexturePacker/Pixi.js format
+              </small>
+            </div>
             <button type="button" className="upload-btn">
               Choose Files
             </button>

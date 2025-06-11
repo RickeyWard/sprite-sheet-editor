@@ -17,7 +17,6 @@ const PRESET_SIZES = [
   { label: '1024×512', width: 1024, height: 512 },
   { label: '2048×1024', width: 2048, height: 1024 },
   { label: '4096×2048', width: 4096, height: 2048 },
-  { label: '4096×4096', width: 4096, height: 4096 },
 ];
 
 export const CanvasSettings: React.FC<CanvasSettingsProps> = ({

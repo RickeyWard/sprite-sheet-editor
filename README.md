@@ -20,6 +20,7 @@ This project serves as both a functional tool and a case study in AI-driven soft
 
 ### Core Functionality
 - **Drag & Drop Interface** - Import sprites by dragging files or folders
+- **JSON Import/Export** - Import previously exported sprite sheets with base64 images
 - **Real-time Preview** - See your sprite sheet as you build it
 - **Flexible Packing Options** - Multiple algorithms and customization settings
 - **Animation Support** - Create and preview sprite animations
@@ -78,6 +79,7 @@ npm run deploy
 
 ## 📝 Usage
 
+### Basic Workflow
 1. **Import Sprites** - Drag image files into the upload area
 2. **Configure Packing** - Choose your preferred settings:
    - Select sprite dimension handling (original vs trimmed)
@@ -86,6 +88,68 @@ npm run deploy
 3. **Create Animations** (optional) - Group related sprites into sequences
 4. **Preview** - Use zoom and pan to inspect your sprite sheet
 5. **Export** - Download the packed sprite sheet and JSON metadata
+
+### JSON Import Options
+The editor supports multiple JSON import formats for maximum compatibility:
+
+- **JSON with base64 images** - Self-contained files with embedded image data
+- **JSON + PNG pairs** - TexturePacker/Pixi.js format with separate image files
+- **Individual frame data** - JSON files containing multiple base64-encoded frames
+
+**Supported JSON Formats:**
+```json
+// Format 1: PixiJS format with base64 encoded spritesheet
+{
+  "frames": {
+    "sprite1.png": { 
+      "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
+      "sourceSize": { "w": 32, "h": 32 }
+    }
+  },
+  "animations": {
+    "walk": ["sprite1.png", "sprite2.png"]
+  },
+  "meta": {
+    "image": "data:image/png;base64,iVBORw0KGgo...",
+    "size": { "w": 512, "h": 512 },
+    "scale": "1"
+  }
+}
+
+// Format 2: Individual frames with base64 images
+{
+  "frames": [
+    { "name": "sprite1", "image": "data:image/png;base64,..." }
+  ],
+  "animations": [
+    { "name": "walk", "frameIds": ["frame-id-1", "frame-id-2"] }
+  ]
+}
+
+// Format 3: For use with separate PNG file (TexturePacker format)
+{
+  "frames": {
+    "sprite1.png": { 
+      "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
+      "sourceSize": { "w": 32, "h": 32 }
+    }
+  },
+  "animations": {
+    "walk": ["sprite1.png", "sprite2.png"]
+  },
+  "meta": {
+    "image": "spritesheet.png",
+    "size": { "w": 512, "h": 512 },
+    "scale": "1"
+  }
+}
+```
 
 ## 🛠 Technology Stack
 

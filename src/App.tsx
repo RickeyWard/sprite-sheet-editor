@@ -10,6 +10,7 @@ import { SpriteStripSlicer } from './components/SpriteStripSlicer';
 import { createSpriteFrameFromFile, loadImageFromFile, downloadCanvas } from './utils/imageLoader';
 import { packSprites } from './utils/spritePacker';
 import { detectPotentialSpriteStrip } from './utils/spriteStripSlicer';
+import { decodeSpritesheetJSON, handleImageWithJSON } from './utils/jsonDecoder';
 import type { SpriteFrame, Animation, PackedSheet, PackingOptions } from './types';
 import './App.css';
 
@@ -53,9 +54,64 @@ function App() {
     try {
       const regularFiles: File[] = [];
       const spriteStripFiles: File[] = [];
+      const jsonFiles: File[] = [];
+      const imageFiles: File[] = [];
       
-      // Separate regular files from potential sprite strips
+      // Separate files by type
       for (const file of files) {
+        if (file.type === 'application/json') {
+          jsonFiles.push(file);
+        } else if (file.type.startsWith('image/png')) {
+          imageFiles.push(file);
+        }
+      }
+      
+      // Handle JSON files with base64 images
+      for (const jsonFile of jsonFiles) {
+        try {
+          const decodedData = await decodeSpritesheetJSON(jsonFile);
+          if (decodedData.frames.length > 0) {
+            setFrames(prev => [...prev, ...decodedData.frames]);
+          }
+          if (decodedData.animations.length > 0) {
+            setAnimations(prev => [...prev, ...decodedData.animations]);
+          }
+        } catch (error) {
+          console.error('Error decoding JSON file:', error);
+          
+          // Check if there's a matching image file for this JSON
+          const baseName = jsonFile.name.replace(/\.[^/.]+$/, '');
+          const matchingImage = imageFiles.find(img => {
+            const imgBaseName = img.name.replace(/\.[^/.]+$/, '');
+            return imgBaseName === baseName;
+          });
+          
+          if (matchingImage) {
+            try {
+              const combinedData = await handleImageWithJSON(matchingImage, jsonFile);
+              if (combinedData.frames.length > 0) {
+                setFrames(prev => [...prev, ...combinedData.frames]);
+              }
+              if (combinedData.animations.length > 0) {
+                setAnimations(prev => [...prev, ...combinedData.animations]);
+              }
+              // Remove the processed image from the imageFiles array
+              const imageIndex = imageFiles.indexOf(matchingImage);
+              if (imageIndex > -1) {
+                imageFiles.splice(imageIndex, 1);
+              }
+            } catch (combinedError) {
+              console.error('Error processing image+JSON combination:', combinedError);
+              alert(`Error processing ${jsonFile.name} with ${matchingImage.name}. Please check the file formats.`);
+            }
+          } else {
+            alert(`Error processing ${jsonFile.name}. Please check it contains valid base64 image data or provide a matching image file.`);
+          }
+        }
+      }
+      
+      // Process remaining image files
+      for (const file of imageFiles) {
         const image = await loadImageFromFile(file);
         
         // Check if this might be a sprite strip
@@ -89,7 +145,7 @@ function App() {
       
     } catch (error) {
       console.error('Error loading files:', error);
-      alert('Error loading some files. Please check they are valid PNG images.');
+      alert('Error loading some files. Please check they are valid PNG images or JSON files.');
     } finally {
       setIsLoading(false);
     }

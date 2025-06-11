@@ -108,6 +108,15 @@ body {
   background: #4fa8c5;
 }
 
+.file-format-info {
+  margin: 0.5rem 0;
+  color: #a0a0a0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: left;
+  max-width: 300px;
+}
+
 .loading {
   text-align: center;
   color: #61dafb;
@@ -602,7 +611,7 @@ body {
 
 /* Spritesheet preview */
 .spritesheet-preview {
-  background: #333;
+  background: #2d2d2d;
   border-radius: 8px;
   padding: 1rem;
   border: 1px solid #404040;
