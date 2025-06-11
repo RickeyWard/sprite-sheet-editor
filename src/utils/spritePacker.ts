@@ -89,11 +89,8 @@ interface Node {
 // Horizontal layout - arrange sprites in rows
 function packHorizontal(
   frames: SpriteFrame[],
-  initialWidth: number,
-  initialHeight: number,
   maxWidth: number,
   maxHeight: number,
-  options: PackingOptions
 ): PackedRect[] {
   const packed: PackedRect[] = [];
   let currentX = 0;
@@ -131,11 +128,8 @@ function packHorizontal(
 // Vertical layout - arrange sprites in columns
 function packVertical(
   frames: SpriteFrame[],
-  initialWidth: number,
-  initialHeight: number,
   maxWidth: number,
   maxHeight: number,
-  options: PackingOptions
 ): PackedRect[] {
   const packed: PackedRect[] = [];
   let currentX = 0;
@@ -174,11 +168,8 @@ function packVertical(
 function packByAnimation(
   frames: SpriteFrame[],
   animations: Animation[],
-  initialWidth: number,
-  initialHeight: number,
   maxWidth: number,
   maxHeight: number,
-  options: PackingOptions
 ): PackedRect[] {
   const packed: PackedRect[] = [];
   let currentY = 0;
@@ -313,11 +304,11 @@ export async function packSprites(
 
   // Pack sprites using the selected layout algorithm
   if (options.layout === 'horizontal') {
-    packed = packHorizontal(spacedFrames, currentWidth, currentHeight, maxWidth, maxHeight, options);
+    packed = packHorizontal(spacedFrames, currentWidth, currentHeight);
   } else if (options.layout === 'vertical') {
-    packed = packVertical(spacedFrames, currentWidth, currentHeight, maxWidth, maxHeight, options);
+    packed = packVertical(spacedFrames, currentWidth, currentHeight);
   } else if (options.layout === 'by-animation') {
-    packed = packByAnimation(spacedFrames, sortedAnimations, currentWidth, currentHeight, maxWidth, maxHeight, options);
+    packed = packByAnimation(spacedFrames, sortedAnimations, currentWidth, currentHeight);
   } else {
     // Compact layout - try packing with increasing canvas sizes
     while (packed.length < spacedFrames.length && attempts < maxAttempts) {

@@ -176,6 +176,7 @@ async function createSpriteFrameFromFrameData(
     // Handle different frame data formats
     let x = 0, y = 0, width = baseImage.width, height = baseImage.height;
     let rotated = false;
+    // @ts-ignore
     let trimmed = false;
     let sourceSize: { w: number; h: number } | undefined;
     let spriteSourceSize: { x: number; y: number; w: number; h: number } | undefined;

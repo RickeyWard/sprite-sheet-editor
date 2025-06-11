@@ -52,7 +52,6 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     const minFrameSize = 2;
     const visibleFrameWidth = Math.max(frameWidth, minFrameSize);
     const visibleFrameHeight = Math.max(frameHeight, minFrameSize);
-    const visibleSpacing = Math.max(spacing, 0.5);
     
     for (let row = 0; row < config.rows; row++) {
       for (let col = 0; col < config.columns; col++) {
