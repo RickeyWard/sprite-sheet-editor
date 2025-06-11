@@ -55,7 +55,6 @@ export interface PackingOptions {
   spacing: number; // pixels between sprites
   trimWhitespace: boolean; // remove transparent pixels
   forcePowerOf2: boolean; // force canvas to power-of-2 dimensions
-  padding: number; // padding around each sprite
   allowRotation: boolean; // allow sprite rotation for better packing
 }
 

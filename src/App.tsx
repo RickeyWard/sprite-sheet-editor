@@ -26,7 +26,6 @@ function App() {
     spacing: 0,
     trimWhitespace: false,
     forcePowerOf2: false,
-    padding: 0,
     allowRotation: false
   });
   const [pendingSpriteStrip, setPendingSpriteStrip] = useState<{

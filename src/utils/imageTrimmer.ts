@@ -133,31 +133,4 @@ export async function createTrimmedSpriteAsync(originalFrame: SpriteFrame, paddi
   });
 }
 
-export async function addPaddingToSprite(originalFrame: SpriteFrame, padding: number): Promise<SpriteFrame> {
-  return new Promise((resolve) => {
-    // Create new canvas with padded size
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    
-    canvas.width = originalFrame.width + padding * 2;
-    canvas.height = originalFrame.height + padding * 2;
-    
-    // Clear canvas (transparent background)
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw the original image centered with padding
-    ctx.drawImage(originalFrame.image, padding, padding);
-    
-    // Create a new image from the padded canvas
-    const paddedImage = new Image();
-    paddedImage.onload = () => {
-      resolve({
-        ...originalFrame,
-        image: paddedImage,
-        width: canvas.width,
-        height: canvas.height
-      });
-    };
-    paddedImage.src = canvas.toDataURL();
-  });
-} 
+ 

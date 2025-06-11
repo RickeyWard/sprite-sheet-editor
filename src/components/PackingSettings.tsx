@@ -23,28 +23,24 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
         spacing: 0,
         trimWhitespace: true,
         forcePowerOf2: true,
-        padding: 0,
         allowRotation: false
       },
       standard: {
         spacing: 2,
         trimWhitespace: false,
         forcePowerOf2: true,
-        padding: 1,
         allowRotation: false
       },
       loose: {
         spacing: 4,
         trimWhitespace: false,
         forcePowerOf2: false,
-        padding: 2,
         allowRotation: false
       },
       preserve: {
         spacing: 0,
         trimWhitespace: false,
         forcePowerOf2: false,
-        padding: 0,
         allowRotation: false
       }
     };
@@ -74,14 +70,14 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
         <button 
           onClick={() => handlePreset('standard')} 
           className="preset-option-btn"
-          title="2px spacing, 1px padding, power-of-2"
+          title="2px spacing, power-of-2"
         >
           Standard
         </button>
         <button 
           onClick={() => handlePreset('loose')} 
           className="preset-option-btn"
-          title="4px spacing, 2px padding, flexible size"
+          title="4px spacing, flexible size"
         >
           Loose
         </button>
@@ -104,21 +100,7 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
           />
         </div>
 
-        <div className="option-group">
-          <label htmlFor="padding">
-            Padding around sprites:
-            <span className="option-value">{options.padding}px</span>
-          </label>
-          <input
-            id="padding"
-            type="range"
-            min="0"
-            max="10"
-            value={options.padding}
-            onChange={(e) => handleChange('padding', parseInt(e.target.value))}
-            className="option-slider"
-          />
-        </div>
+
 
         <div className="option-group radio-group">
           <span className="radio-group-title">Sprite Dimensions:</span>
@@ -183,7 +165,6 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
         </div>
         <div className="info-item">
           <span>Spacing: {options.spacing}px</span>
-          <span>Padding: {options.padding}px</span>
         </div>
         <div className="info-item">
           <span>Original size: {options.trimWhitespace ? 'No' : 'Yes'}</span>

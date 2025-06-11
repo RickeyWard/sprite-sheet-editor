@@ -1,5 +1,5 @@
 import type { SpriteFrame, PackedSheet, PixiSpritesheet, Animation, PackingOptions } from '../types';
-import { createTrimmedSpriteAsync, addPaddingToSprite } from './imageTrimmer';
+import { createTrimmedSpriteAsync } from './imageTrimmer';
 
 interface PackedRect {
   x: number;
@@ -95,7 +95,6 @@ export async function packSprites(
     spacing: 2,
     trimWhitespace: false,
     forcePowerOf2: true,
-    padding: 1,
     allowRotation: false
   }
 ): Promise<PackedSheet | null> {
@@ -107,12 +106,7 @@ export async function packSprites(
   if (options.trimWhitespace) {
     // Trim whitespace from all frames
     processedFrames = await Promise.all(
-      frames.map(frame => createTrimmedSpriteAsync(frame, options.padding))
-    );
-  } else if (options.padding > 0) {
-    // Apply padding without trimming
-    processedFrames = await Promise.all(
-      frames.map(frame => addPaddingToSprite(frame, options.padding))
+      frames.map(frame => createTrimmedSpriteAsync(frame, 0))
     );
   }
 
@@ -207,9 +201,8 @@ export async function packSprites(
     const drawHeight = rect.frame.height - options.spacing;
     ctx.drawImage(rect.frame.image, rect.x, rect.y, drawWidth, drawHeight);
     
-    // Handle trimmed vs non-trimmed sprites and padding
+    // Handle trimmed vs non-trimmed sprites
     const isTrimmed = options.trimWhitespace && 'trimData' in rect.frame;
-    const isPadded = !isTrimmed && options.padding > 0;
     const trimData = isTrimmed ? (rect.frame as any).trimData : null;
     const originalSize = isTrimmed ? (rect.frame as any).originalSize : { width: originalFrame.width, height: originalFrame.height };
     
@@ -227,10 +220,10 @@ export async function packSprites(
     
     // Always recompute spriteSourceSize based on current packing/trimming
     const spriteSourceSize = {
-      x: trimData ? trimData.x : (isPadded ? -options.padding : 0),
-      y: trimData ? trimData.y : (isPadded ? -options.padding : 0),
-      w: drawWidth,
-      h: drawHeight
+      x: trimData ? trimData.x : 0,
+      y: trimData ? trimData.y : 0,
+      w: trimData ? trimData.width : originalSize.width,
+      h: trimData ? trimData.height : originalSize.height
     };
     
     spritesheetFrames[rect.frame.name] = {
