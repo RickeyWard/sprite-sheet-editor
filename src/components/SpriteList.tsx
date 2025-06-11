@@ -7,6 +7,7 @@ interface SpriteListProps {
   onFrameSelect: (frameId: string, selected: boolean) => void;
   onFrameRemove: (frameId: string) => void;
   onFrameRename: (frameId: string, newName: string) => void;
+  onFrameSlice: (frameId: string) => void;
 }
 
 export const SpriteList: React.FC<SpriteListProps> = ({
@@ -14,7 +15,8 @@ export const SpriteList: React.FC<SpriteListProps> = ({
   selectedFrames,
   onFrameSelect,
   onFrameRemove,
-  onFrameRename
+  onFrameRename,
+  onFrameSlice
 }) => {
   const [editingFrame, setEditingFrame] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -53,6 +55,13 @@ export const SpriteList: React.FC<SpriteListProps> = ({
                 checked={selectedFrames.has(frame.id)}
                 onChange={(e) => onFrameSelect(frame.id, e.target.checked)}
               />
+              <button
+                className="frame-slice-btn"
+                onClick={() => onFrameSlice(frame.id)}
+                title="Slice this frame"
+              >
+                ⚔️
+              </button>
               <button
                 className="remove-btn"
                 onClick={() => onFrameRemove(frame.id)}

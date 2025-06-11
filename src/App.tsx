@@ -34,6 +34,7 @@ function App() {
     file: File;
   } | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [manualSliceFrame, setManualSliceFrame] = useState<SpriteFrame | null>(null);
 
   // Pack sprites whenever frames, animations, or canvas settings change
   useEffect(() => {
@@ -183,6 +184,13 @@ function App() {
     ));
   };
 
+  const handleFrameSlice = (frameId: string) => {
+    const frame = frames.find(f => f.id === frameId);
+    if (frame) {
+      setManualSliceFrame(frame);
+    }
+  };
+
   const handleAnimationCreate = (name: string, frameIds: string[]) => {
     const newAnimation: Animation = {
       id: crypto.randomUUID(),
@@ -310,6 +318,38 @@ function App() {
     }
   };
 
+  const handleManualSlice = async (slicedFrames: SpriteFrame[], createAnimation?: { name: string }) => {
+    if (manualSliceFrame) {
+      // Remove the original frame
+      setFrames(prev => prev.filter(f => f.id !== manualSliceFrame.id));
+      
+      // Remove the original frame from any animations
+      setAnimations(prev => prev.map(anim => ({
+        ...anim,
+        frameIds: anim.frameIds.filter(id => id !== manualSliceFrame.id)
+      })).filter(anim => anim.frameIds.length > 0));
+      
+      // Add the new sliced frames
+      setFrames(prev => [...prev, ...slicedFrames]);
+      
+      // Create animation if requested
+      if (createAnimation && slicedFrames.length > 0) {
+        const newAnimation = {
+          id: crypto.randomUUID(),
+          name: createAnimation.name,
+          frameIds: slicedFrames.map(frame => frame.id)
+        };
+        setAnimations(prev => [...prev, newAnimation]);
+      }
+      
+      setManualSliceFrame(null);
+    }
+  };
+
+  const handleManualSliceCancel = () => {
+    setManualSliceFrame(null);
+  };
+
   return (
     <div className="app">
       <header className="app-header">
@@ -375,6 +415,7 @@ function App() {
               onFrameSelect={handleFrameSelect}
               onFrameRemove={handleFrameRemove}
               onFrameRename={handleFrameRename}
+              onFrameSlice={handleFrameSlice}
             />
           </section>
 
@@ -410,6 +451,16 @@ function App() {
           onSlice={handleSpriteStripSlice}
           onCancel={handleSpriteStripCancel}
           onKeepOriginal={handleSpriteStripKeepOriginal}
+        />
+      )}
+
+      {manualSliceFrame && (
+        <SpriteStripSlicer
+          image={manualSliceFrame.image}
+          baseName={manualSliceFrame.name}
+          onSlice={handleManualSlice}
+          onCancel={handleManualSliceCancel}
+          onKeepOriginal={handleManualSliceCancel}
         />
       )}
     </div>
