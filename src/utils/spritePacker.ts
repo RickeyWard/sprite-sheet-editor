@@ -91,6 +91,7 @@ function packHorizontal(
   frames: SpriteFrame[],
   maxWidth: number,
   maxHeight: number,
+  spacing: number = 0
 ): PackedRect[] {
   const packed: PackedRect[] = [];
   let currentX = 0;
@@ -101,7 +102,7 @@ function packHorizontal(
     // Check if we need to start a new row
     if (currentX + frame.width > maxWidth && currentX > 0) {
       currentX = 0;
-      currentY += rowHeight;
+      currentY += rowHeight + spacing;
       rowHeight = 0;
     }
 
@@ -118,7 +119,7 @@ function packHorizontal(
       frame
     });
 
-    currentX += frame.width;
+    currentX += frame.width + spacing;
     rowHeight = Math.max(rowHeight, frame.height);
   }
 
@@ -130,6 +131,7 @@ function packVertical(
   frames: SpriteFrame[],
   maxWidth: number,
   maxHeight: number,
+  spacing: number = 0
 ): PackedRect[] {
   const packed: PackedRect[] = [];
   let currentX = 0;
@@ -140,7 +142,7 @@ function packVertical(
     // Check if we need to start a new column
     if (currentY + frame.height > maxHeight && currentY > 0) {
       currentY = 0;
-      currentX += columnWidth;
+      currentX += columnWidth + spacing;
       columnWidth = 0;
     }
 
@@ -157,7 +159,7 @@ function packVertical(
       frame
     });
 
-    currentY += frame.height;
+    currentY += frame.height + spacing;
     columnWidth = Math.max(columnWidth, frame.width);
   }
 
@@ -170,6 +172,7 @@ function packByAnimation(
   animations: Animation[],
   maxWidth: number,
   maxHeight: number,
+  spacing: number = 0
 ): PackedRect[] {
   const packed: PackedRect[] = [];
   let currentY = 0;
@@ -229,11 +232,11 @@ function packByAnimation(
         frame
       });
 
-      currentX += frame.width;
+      currentX += frame.width + spacing;
     }
 
     // Move to next row
-    currentY += rowHeight;
+    currentY += rowHeight + spacing;
   }
 
   return packed;
@@ -276,41 +279,57 @@ export async function packSprites(
     );
   }
 
-  // Calculate optimal canvas size including spacing
-  const spacedFrames = processedFrames.map(frame => ({
-    ...frame,
-    width: frame.width + options.spacing,
-    height: frame.height + options.spacing
-  }));
-  
-  const totalArea = spacedFrames.reduce((sum, frame) => sum + frame.width * frame.height, 0);
-  const maxDimension = Math.max(...spacedFrames.map(f => Math.max(f.width, f.height)));
-  let size = Math.max(Math.ceil(Math.sqrt(totalArea)), maxDimension);
-  
-  if (options.forcePowerOf2) {
-    // Round up to next power of 2
-    size = Math.pow(2, Math.ceil(Math.log2(size)));
-  }
-  
-  // Ensure we don't exceed max dimensions
-  size = Math.min(size, Math.min(maxWidth, maxHeight));
-
   let packed: PackedRect[] = [];
   let attempts = 0;
   const maxAttempts = 10;
   
-  let currentWidth = size;
-  let currentHeight = size;
+  let currentWidth: number;
+  let currentHeight: number;
+
+  // Calculate canvas size based on layout type
+  if (options.layout === 'compact') {
+    // For compact layout, use area-based calculation
+    const spacedFrames = processedFrames.map(frame => ({
+      ...frame,
+      width: frame.width + options.spacing,
+      height: frame.height + options.spacing
+    }));
+    
+    const totalArea = spacedFrames.reduce((sum, frame) => sum + frame.width * frame.height, 0);
+    const maxDimension = Math.max(...spacedFrames.map(f => Math.max(f.width, f.height)));
+    let size = Math.max(Math.ceil(Math.sqrt(totalArea)), maxDimension);
+    
+    if (options.forcePowerOf2) {
+      // Round up to next power of 2
+      size = Math.pow(2, Math.ceil(Math.log2(size)));
+    }
+    
+    // Ensure we don't exceed max dimensions
+    size = Math.min(size, Math.min(maxWidth, maxHeight));
+    
+    currentWidth = size;
+    currentHeight = size;
+  } else {
+    // For other layouts, use the full max dimensions
+    currentWidth = maxWidth;
+    currentHeight = maxHeight;
+  }
 
   // Pack sprites using the selected layout algorithm
   if (options.layout === 'horizontal') {
-    packed = packHorizontal(spacedFrames, currentWidth, currentHeight);
+    packed = packHorizontal(processedFrames, currentWidth, currentHeight, options.spacing);
   } else if (options.layout === 'vertical') {
-    packed = packVertical(spacedFrames, currentWidth, currentHeight);
+    packed = packVertical(processedFrames, currentWidth, currentHeight, options.spacing);
   } else if (options.layout === 'by-animation') {
-    packed = packByAnimation(spacedFrames, sortedAnimations, currentWidth, currentHeight);
+    packed = packByAnimation(processedFrames, sortedAnimations, currentWidth, currentHeight, options.spacing);
   } else {
     // Compact layout - try packing with increasing canvas sizes
+    const spacedFrames = processedFrames.map(frame => ({
+      ...frame,
+      width: frame.width + options.spacing,
+      height: frame.height + options.spacing
+    }));
+    
     while (packed.length < spacedFrames.length && attempts < maxAttempts) {
       const packer = new BinPacker(currentWidth, currentHeight);
       packed = packer.pack(spacedFrames);
@@ -334,7 +353,7 @@ export async function packSprites(
     }
   }
 
-  if (packed.length < spacedFrames.length) {
+  if (packed.length < processedFrames.length) {
     console.error('Could not pack all sprites');
     return null;
   }
@@ -343,8 +362,8 @@ export async function packSprites(
   let actualWidth = 0;
   let actualHeight = 0;
   for (const rect of packed) {
-    const drawWidth = rect.frame.width - options.spacing;
-    const drawHeight = rect.frame.height - options.spacing;
+    const drawWidth = rect.frame.width;
+    const drawHeight = rect.frame.height;
     actualWidth = Math.max(actualWidth, rect.x + drawWidth);
     actualHeight = Math.max(actualHeight, rect.y + drawHeight);
   }
@@ -371,9 +390,9 @@ export async function packSprites(
     const originalFrame = frames.find(f => f.id === rect.frame.id);
     if (!originalFrame) continue;
     
-    // Draw the actual image (without spacing)
-    const drawWidth = rect.frame.width - options.spacing;
-    const drawHeight = rect.frame.height - options.spacing;
+    // Draw the actual image
+    const drawWidth = rect.frame.width;
+    const drawHeight = rect.frame.height;
     ctx.drawImage(rect.frame.image, rect.x, rect.y, drawWidth, drawHeight);
     
     // Handle trimmed vs non-trimmed sprites
