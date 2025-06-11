@@ -7,6 +7,8 @@ export interface SliceConfig {
   frameHeight: number;
   spacing: number;
   margin: number;
+  paddingX: number;
+  paddingY: number;
 }
 
 export function detectPotentialSpriteStrip(image: HTMLImageElement): boolean {
@@ -43,7 +45,9 @@ export function suggestSliceConfig(image: HTMLImageElement): SliceConfig {
       frameWidth: Math.floor(image.width / Math.min(bestGuess, 16)),
       frameHeight: image.height,
       spacing: 0,
-      margin: 0
+      margin: 0,
+      paddingX: 0,
+      paddingY: 0
     };
   } else if (aspectRatio < 0.33) {
     // Vertical strip
@@ -62,7 +66,9 @@ export function suggestSliceConfig(image: HTMLImageElement): SliceConfig {
       frameWidth: image.width,
       frameHeight: Math.floor(image.height / Math.min(bestGuess, 16)),
       spacing: 0,
-      margin: 0
+      margin: 0,
+      paddingX: 0,
+      paddingY: 0
     };
   } else {
     // Square-ish - might be a grid
@@ -76,7 +82,9 @@ export function suggestSliceConfig(image: HTMLImageElement): SliceConfig {
       frameWidth: Math.floor(image.width / Math.max(1, Math.min(cols, 8))),
       frameHeight: Math.floor(image.height / Math.max(1, Math.min(rows, 8))),
       spacing: 0,
-      margin: 0
+      margin: 0,
+      paddingX: 0,
+      paddingY: 0
     };
   }
 }
@@ -97,8 +105,15 @@ export function sliceSpriteStrip(
         const ctx = canvas.getContext('2d');
         if (!ctx) continue;
         
-        canvas.width = config.frameWidth;
-        canvas.height = config.frameHeight;
+        // Calculate final frame size including padding
+        const finalFrameWidth = config.frameWidth + config.paddingX * 2;
+        const finalFrameHeight = config.frameHeight + config.paddingY * 2;
+        
+        canvas.width = finalFrameWidth;
+        canvas.height = finalFrameHeight;
+        
+        // Fill with transparent background
+        ctx.clearRect(0, 0, finalFrameWidth, finalFrameHeight);
         
         const sourceX = config.margin + col * (config.frameWidth + config.spacing);
         const sourceY = config.margin + row * (config.frameHeight + config.spacing);
@@ -113,10 +128,14 @@ export function sliceSpriteStrip(
           continue;
         }
         
+        // Draw the image centered in the padded canvas
+        const destX = config.paddingX;
+        const destY = config.paddingY;
+        
         ctx.drawImage(
           image,
           sourceX, sourceY, config.frameWidth, config.frameHeight,
-          0, 0, config.frameWidth, config.frameHeight
+          destX, destY, config.frameWidth, config.frameHeight
         );
         
         // Convert canvas to image
@@ -127,8 +146,8 @@ export function sliceSpriteStrip(
             id: crypto.randomUUID(),
             name: `${baseName}_${frameNumber.toString().padStart(2, '0')}`,
             image: frameImage,
-            width: config.frameWidth,
-            height: config.frameHeight
+            width: finalFrameWidth,
+            height: finalFrameHeight
           };
           
           frames.push(frame);

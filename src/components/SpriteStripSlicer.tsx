@@ -20,6 +20,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
 }) => {
   const [config, setConfig] = useState<SliceConfig>(() => suggestSliceConfig(image));
   const [previewCanvas, setPreviewCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [paddingPreviewCanvas, setPaddingPreviewCanvas] = useState<HTMLCanvasElement | null>(null);
   const [createAnimation, setCreateAnimation] = useState(true);
   const [animationName, setAnimationName] = useState(baseName);
   const [editableBaseName, setEditableBaseName] = useState(baseName);
@@ -31,12 +32,20 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     if (!ctx) return;
 
     const maxSize = 600; // Increased from 400 for better visibility
-    const scale = Math.min(maxSize / image.width, maxSize / image.height, 1);
+    let scale = Math.min(maxSize / image.width, maxSize / image.height, 1);
+    
+    // Apply additional zoom if frames are very small
+    const minFrameDisplaySize = 32; // Minimum comfortable viewing size
+    const frameDisplayScale = Math.min(minFrameDisplaySize / config.frameWidth, minFrameDisplaySize / config.frameHeight);
+    if (frameDisplayScale > 1) {
+      scale = Math.min(scale * frameDisplayScale, maxSize / Math.min(image.width, image.height));
+    }
     
     canvas.width = image.width * scale;
     canvas.height = image.height * scale;
     
-    // Draw the image
+    // Draw the image with pixelated scaling
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     
     // Draw grid overlay
@@ -47,6 +56,8 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     const frameHeight = config.frameHeight * scale;
     const spacing = config.spacing * scale;
     const margin = config.margin * scale;
+    const paddingX = config.paddingX * scale;
+    const paddingY = config.paddingY * scale;
     
     // Ensure minimum visibility - if frames are too small, make them at least 2px
     const minFrameSize = 2;
@@ -60,7 +71,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
         
         // Always draw the grid lines, even if very small
         if (x < canvas.width && y < canvas.height) {
-          // Draw the frame rectangle
+          // Draw the source frame rectangle (original content area)
           const rectWidth = Math.min(visibleFrameWidth, canvas.width - x);
           const rectHeight = Math.min(visibleFrameHeight, canvas.height - y);
           
@@ -83,6 +94,84 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     }
     
     setPreviewCanvas(canvas);
+  }, [image, config]);
+
+  // Create padding preview for a single frame
+  useEffect(() => {
+    if (config.paddingX === 0 && config.paddingY === 0) {
+      setPaddingPreviewCanvas(null);
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Calculate final frame size including padding
+    const finalFrameWidth = config.frameWidth + config.paddingX * 2;
+    const finalFrameHeight = config.frameHeight + config.paddingY * 2;
+    
+    // Scale to fit in a reasonable preview size with zoom for small frames
+    const maxPreviewSize = 160;
+    const minDisplaySize = 80; // Minimum comfortable viewing size for padding preview
+    let scale = Math.max(
+      minDisplaySize / Math.max(finalFrameWidth, finalFrameHeight), // Ensure minimum size
+      Math.min(maxPreviewSize / finalFrameWidth, maxPreviewSize / finalFrameHeight) // Don't exceed max size
+    );
+    
+    canvas.width = finalFrameWidth * scale;
+    canvas.height = finalFrameHeight * scale;
+    
+    // Draw checkerboard background
+    const checkerSize = Math.max(4, 8 * scale);
+    const lightColor = '#ffffff';
+    const darkColor = '#cccccc';
+    const numCols = Math.ceil(canvas.width / checkerSize);
+    const numRows = Math.ceil(canvas.height / checkerSize);
+    
+    for (let row = 0; row < numRows; row++) {
+      for (let col = 0; col < numCols; col++) {
+        const isEven = (row + col) % 2 === 0;
+        ctx.fillStyle = isEven ? lightColor : darkColor;
+        ctx.fillRect(col * checkerSize, row * checkerSize, checkerSize, checkerSize);
+      }
+    }
+    
+    // Extract the first frame from the source image
+    const sourceX = config.margin;
+    const sourceY = config.margin;
+    
+    // Check if source coordinates are valid
+    if (sourceX + config.frameWidth <= image.width && 
+        sourceY + config.frameHeight <= image.height) {
+      
+      // Draw the original frame content centered in the padded canvas
+      const destX = config.paddingX * scale;
+      const destY = config.paddingY * scale;
+      const destWidth = config.frameWidth * scale;
+      const destHeight = config.frameHeight * scale;
+      
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        image,
+        sourceX, sourceY, config.frameWidth, config.frameHeight,
+        destX, destY, destWidth, destHeight
+      );
+      
+      // Draw a border around the original content area to show the padding
+      ctx.strokeStyle = '#61dafb';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(destX, destY, destWidth, destHeight);
+      
+      // Draw a border around the full padded frame
+      ctx.strokeStyle = '#ff6b6b';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      ctx.setLineDash([]);
+    }
+    
+    setPaddingPreviewCanvas(canvas);
   }, [image, config]);
 
   const handleSlice = async () => {
@@ -125,6 +214,10 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
         <p>
           This image might be a sprite strip. Configure how to slice it into individual frames.
         </p>
+        <p style={{ fontSize: '0.9rem', color: '#a0a0a0', marginBottom: '1rem' }}>
+          💡 <strong>Padding</strong> adds transparent space around each extracted frame, keeping the original content centered. 
+          Blue lines show what will be extracted from the source image.
+        </p>
         
         <div className="slicer-content">
           <div className="base-name-section">
@@ -162,6 +255,31 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
                   />
                 )}
               </div>
+              
+              {paddingPreviewCanvas && (
+                <div className="padding-preview-section">
+                  <h4>Single Frame with Padding</h4>
+                  <div className="padding-preview-container">
+                    <canvas
+                      ref={(ref) => {
+                        if (ref && paddingPreviewCanvas) {
+                          const ctx = ref.getContext('2d');
+                          if (ctx) {
+                            ref.width = paddingPreviewCanvas.width;
+                            ref.height = paddingPreviewCanvas.height;
+                            ctx.drawImage(paddingPreviewCanvas, 0, 0);
+                          }
+                        }
+                      }}
+                      className="padding-preview"
+                    />
+                    <p className="padding-preview-info">
+                      Blue: Original content<br/>
+                      Red dashed: Final frame size
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="config-section">
@@ -245,12 +363,39 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
                     />
                   </label>
                 </div>
+                
+                <div className="config-item">
+                  <label>
+                    Padding X:
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={config.paddingX}
+                      onChange={(e) => updateConfig({ paddingX: parseInt(e.target.value) || 0 })}
+                    />
+                  </label>
+                </div>
+                
+                <div className="config-item">
+                  <label>
+                    Padding Y:
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={config.paddingY}
+                      onChange={(e) => updateConfig({ paddingY: parseInt(e.target.value) || 0 })}
+                    />
+                  </label>
+                </div>
               </div>
               
               <div className="config-info">
                 <p><strong>Total frames:</strong> {totalFrames}</p>
                 <p><strong>Image size:</strong> {image.width} × {image.height}</p>
-                <p><strong>Frame size:</strong> {config.frameWidth} × {config.frameHeight}</p>
+                <p><strong>Source frame size:</strong> {config.frameWidth} × {config.frameHeight}</p>
+                <p><strong>Final frame size:</strong> {config.frameWidth + config.paddingX * 2} × {config.frameHeight + config.paddingY * 2}</p>
                 <p><strong>Frame names:</strong> {editableBaseName}_01, {editableBaseName}_02, {editableBaseName}_03...</p>
               </div>
               

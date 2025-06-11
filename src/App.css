@@ -1637,6 +1637,41 @@ body {
   display: block;
 }
 
+.padding-preview-section {
+  margin-top: 1.5rem;
+}
+
+.padding-preview-section h4 {
+  margin-bottom: 0.5rem;
+  color: #61dafb;
+  font-size: 1rem;
+}
+
+.padding-preview-container {
+  background: #1a1a1a;
+  border: 2px solid #404040;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.padding-preview {
+  image-rendering: pixelated;
+  border-radius: 4px;
+  display: block;
+}
+
+.padding-preview-info {
+  font-size: 0.8rem;
+  color: #a0a0a0;
+  text-align: center;
+  margin: 0;
+  line-height: 1.3;
+}
+
 .config-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
