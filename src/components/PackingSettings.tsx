@@ -19,15 +19,15 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
 
   const handlePreset = (preset: 'preserve' | 'tight' | 'standard' | 'loose') => {
     const presets: Record<string, PackingOptions> = {
-              tight: {
-          spacing: 0,
+        tight: {
+          spacing: 1,
           trimWhitespace: true,
-          forcePowerOf2: true,
-          allowRotation: false,
+          forcePowerOf2: false,
+          allowRotation: true,
           layout: 'compact'
         },
         standard: {
-          spacing: 2,
+          spacing: 0,
           trimWhitespace: false,
           forcePowerOf2: true,
           allowRotation: false,
@@ -45,7 +45,7 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
           trimWhitespace: false,
           forcePowerOf2: false,
           allowRotation: false,
-          layout: 'by-animation'
+          layout: 'compact'
         }
     };
     onOptionsChange(presets[preset]);
