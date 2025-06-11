@@ -2,37 +2,31 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { PackedSheet } from '../types';
 import { downloadCanvas, downloadJSON } from '../utils/imageLoader';
 
-import wasmURL from '../libs/basis_encoder.wasm?url';
-declare global {
-  interface Window {
-    BasisEncoderModule: any;
-    wasm_basis_encoder_url: string;
-  }
-}
-window.wasm_basis_encoder_url = wasmURL;
-// @ts-ignore
-import * as basisEncoderModule from '../libs/basis_encoder.js';
+import { 
+  initBasisEncoderGlobal, 
+  type BasisEncoderModule,
+  type BasisEncoder
+} from '../libs/basis-encoder-wrapper';
 
-try {
-  basisEncoderModule.BASIS({
-  onRuntimeInitialized: () => {
-    console.log("BasisEncoderModule initialized");
-  }
-}).then((module: any) => {
-  window.BasisEncoderModule = module;
+// Define enums locally to avoid import issues
+const BasisTextureFormat = {
+  cETC1S: 0,
+  cUASTC4x4: 1,
+  cUASTC_HDR_4x4: 2,
+  cASTC_HDR_6x6: 3,
+  cASTC_HDR_6x6_INTERMEDIATE: 4
+} as const;
 
-  if (module.initializeBasis) {
-    module.initializeBasis();
-    console.log("BasisEncoderModule.initializeBasis() called successfully.");
-  }
-  else {
-    console.error("BasisEncoderModule.initializeBasis() is not available on the BasisEncoderModule object.");
-  }
-
-});
-} catch (error) {
-  console.error("Error initializing BASIS:", error);
-}
+const ImageType = {
+  cPNGImage: 0,
+  cJPEGImage: 1,
+  cTGAImage: 2,
+  cBMPImage: 3,
+  cGIFImage: 4,
+  cKTXImage: 5,
+  cPVRImage: 6,
+  cDDSImage: 7
+} as const;
 
 interface SpritesheetPreviewProps {
   packedSheet: PackedSheet | null;
@@ -48,6 +42,34 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   const [includeImageData, setIncludeImageData] = useState(false);
   const [autoFit, setAutoFit] = useState(true);
   const [marchingAntsOffset, setMarchingAntsOffset] = useState(0);
+  const [basisModule, setBasisModule] = useState<BasisEncoderModule | null>(null);
+  const [basisModuleError, setBasisModuleError] = useState<string | null>(null);
+
+  // Initialize Basis encoder module
+  useEffect(() => {
+    let isMounted = true;
+    
+    const initializeModule = async () => {
+      try {
+        const module = await initBasisEncoderGlobal();
+        if (isMounted) {
+          setBasisModule(module);
+          setBasisModuleError(null);
+        }
+      } catch (error) {
+        console.error("Error initializing BASIS:", error);
+        if (isMounted) {
+          setBasisModuleError(error instanceof Error ? error.message : 'Failed to initialize Basis encoder');
+        }
+      }
+    };
+    
+    initializeModule();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Animation for marching ants
   useEffect(() => {
@@ -188,97 +210,114 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   };
 
   const handleDownloadKTX2 = async () => {
-    const downloadBtn = document.getElementById('download-ktx2-btn');
-    if (packedSheet) {
-      try {
+    const downloadBtn = document.getElementById('download-ktx2-btn') as HTMLButtonElement;
+    
+    if (!packedSheet) {
+      alert('No spritesheet available to export');
+      return;
+    }
+
+    if (!basisModule) {
+      alert('Basis encoder module not initialized. Please wait and try again.');
+      return;
+    }
+
+    if (basisModuleError) {
+      alert(`Basis encoder error: ${basisModuleError}`);
+      return;
+    }
+
+          try {
         downloadBtn?.setAttribute('disabled', 'true');
 
-        // Convert canvas to blob then to arrayBuffer
-        const blobData = await new Promise<Blob>(resolve => {
-          packedSheet.canvas.toBlob(blob => {
-            resolve(blob as Blob);
-          }, 'image/png');
-        });
-        const curLoadedImageData = await blobData.arrayBuffer();
-
-        const { BasisEncoder } = window.BasisEncoderModule;
-
-        const basisEncoder = new BasisEncoder();
-        basisEncoder.controlThreading(false, 4);
-        basisEncoder.setCreateKTX2File(true);
-        basisEncoder.setKTX2UASTCSupercompression(true);
-        basisEncoder.setKTX2SRGBTransferFunc(true);
-        var img_type = window.BasisEncoderModule.ldr_image_type.cPNGImage.value;
-        basisEncoder.setSliceSourceImage(0, new Uint8Array(curLoadedImageData), 0, 0, img_type);
-        basisEncoder.setFormatMode(1);
-        basisEncoder.setQualityLevel(10);
-
-        // set all the settings to the default values
-        // Use UASTC HDR quality (0=fastest)
-        // basisEncoder.setUASTCHDRQualityLevel(getUASTCHDRQuality());
-         
-        // basisEncoder.setASTC_HDR_6x6_Level(getASTCHDR6x6CompLevel());
-        // basisEncoder.setLambda(getASTC6x6RDOLambda());
-        // basisEncoder.setRec2020(elem('Rec2020').checked);
-
-        // basisEncoder.setDebug(elem('Debug').checked);
-        // basisEncoder.setComputeStats(elem('ComputeStats').checked);
-        // basisEncoder.setPerceptual(elem('SRGB').checked);
-        // basisEncoder.setMipSRGB(elem('SRGB').checked);
-
-        // const etc1SQualityLevel = parseInt(elem('EncodeQuality').value, 10);
-        // basisEncoder.setQualityLevel(etc1SQualityLevel);
-                          
-        // basisEncoder.setRDOUASTC(elem('UASTC_LDR_RDO').checked);
-        // basisEncoder.setRDOUASTCQualityScalar(getUASTCLDRRDOQuality());
+        // Get raw pixel data from canvas instead of PNG blob
+        const canvas = packedSheet.canvas;
+        const ctx = canvas.getContext('2d');
         
-        // basisEncoder.setMipGen(elem('Mipmaps').checked);
-        // basisEncoder.setCompressionLevel(getETC1SCompLevel());
-        // basisEncoder.setPackUASTCFlags(getUASTCLDRQuality());
-
-        const desiredBasisTexFormat = window.BasisEncoderModule.basis_tex_format.cUASTC4x4.value;
-        basisEncoder.setFormatMode(1);
-
-        if (desiredBasisTexFormat === window.BasisEncoderModule.basis_tex_format.cUASTC_HDR_4x4.value)
-            console.log('Encoding to UASTC HDR 4x4 quality level '); // + getUASTCHDRQuality());
-        else if (desiredBasisTexFormat === window.BasisEncoderModule.basis_tex_format.cASTC_HDR_6x6.value)
-            console.log('Encoding to ASTC HDR 6x6');
-        else if (desiredBasisTexFormat === window.BasisEncoderModule.basis_tex_format.cASTC_HDR_6x6_INTERMEDIATE.value)
-            console.log('Encoding to ASTC HDR 6x6 Intermediate');
-        else if (desiredBasisTexFormat === window.BasisEncoderModule.basis_tex_format.cUASTC4x4.value)
-            console.log('Encoding to UASTC LDR 4x4');
-        else 
-            console.log('Encoding to ETC1S quality level '); // + etc1SQualityLevel);
-
-         // Create a destination buffer to hold the compressed .basis file data. If this buffer isn't large enough compression will fail.
-        var ktx2FileData = new Uint8Array(1024 * 1024 * 24);
-        const startTime = performance.now();
-        let num_output_bytes = basisEncoder.encode(ktx2FileData);
-        const elapsed = performance.now() - startTime;
-        console.log('encoding time', elapsed.toFixed(2));
-
-        let actualKTX2FileData = new Uint8Array(ktx2FileData.buffer, 0, num_output_bytes);
-        basisEncoder.delete();
-
-        if (num_output_bytes == 0) {
-          console.log('encodeBasisTexture() failed!');
-        } else {
-          console.log('encodeBasisTexture() succeeded, output size ' + num_output_bytes);
-          const filename = 'spritesheet.ktx2';
-          const blob = new Blob([actualKTX2FileData], { type: 'image/ktx2' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+        if (!ctx) {
+          throw new Error('Failed to get canvas 2D context');
         }
-      } catch (error) {
-        console.error('Error creating KTX2 file:', error);
-        alert('Error creating KTX2 file. This is a placeholder implementation.');
+        
+        // Get raw RGBA pixel data
+        const canvasImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixelData = new Uint8Array(canvasImageData.data.buffer);
+
+      // Create encoder instance with proper typing
+      const encoder: BasisEncoder = new basisModule.BasisEncoder();
+      
+      // Configure encoder settings
+      encoder.controlThreading(false, 4);
+      encoder.setCreateKTX2File(true);
+      encoder.setKTX2UASTCSupercompression(true);
+      encoder.setKTX2SRGBTransferFunc(true);
+      
+              // Set source image - now using raw RGBA pixel data
+        const canvasWidth = packedSheet.canvas.width;
+        const canvasHeight = packedSheet.canvas.height;
+        
+        console.log(`Setting source image: ${canvasWidth}x${canvasHeight}, raw RGBA data size: ${pixelData.length} bytes`);
+        
+        // For raw RGBA data, we don't need to specify an image type - pass 0 (note that we could get a png and then use var img_type = window.BasisEncoderModule.ldr_image_type.cPNGImage.value;
+        const success = encoder.setSliceSourceImage(0, pixelData, canvasWidth, canvasHeight, 0);
+      
+              if (!success) {
+          throw new Error(`Failed to set source image data (${canvasWidth}x${canvasHeight}, ${pixelData.length} bytes)`);
+        }
+
+      // Configure format and quality
+      encoder.setFormatMode(1); // UASTC mode
+      encoder.setQualityLevel(128); // High quality
+      
+      // Optional: Set debug and stats (uncomment if needed)
+      // encoder.setDebug(false);
+      // encoder.setComputeStats(false);
+      // encoder.setPerceptual(true);
+      // encoder.setMipSRGB(true);
+      // encoder.setMipGen(false);
+
+      // Log the encoding format (using UASTC LDR 4x4 format)
+      console.log('Encoding to UASTC LDR 4x4 format');
+
+      // Create output buffer (24MB should be sufficient for most spritesheets)
+      const outputBuffer = new Uint8Array(1024 * 1024 * 24);
+      
+      // Encode the image
+      console.log('Starting KTX2 encoding...');
+      const startTime = performance.now();
+      const outputSize = encoder.encode(outputBuffer);
+      const elapsed = performance.now() - startTime;
+      
+      console.log(`Encoding completed in ${elapsed.toFixed(2)}ms`);
+
+      // Clean up encoder
+      encoder.delete();
+
+      if (outputSize === 0) {
+        throw new Error('Encoding failed - output size is 0');
       }
+
+      // Create final data array with exact size
+      const ktx2Data = new Uint8Array(outputBuffer.buffer, 0, outputSize);
+      
+      console.log(`KTX2 encoding succeeded, output size: ${outputSize} bytes`);
+      
+      // Download the file
+      const filename = 'spritesheet.ktx2';
+      const blob = new Blob([ktx2Data], { type: 'image/ktx2' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Error creating KTX2 file:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Error creating KTX2 file: ${errorMessage}`);
+    } finally {
       downloadBtn?.removeAttribute('disabled');
     }
   };
@@ -487,8 +526,20 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
         <button onClick={handleDownloadJSON} className="export-btn">
           📄 Download JSON
         </button>
-        <button id='download-ktx2-btn' onClick={handleDownloadKTX2} className="export-btn">
-          📄 Download KTX2
+        <button 
+          id='download-ktx2-btn' 
+          onClick={handleDownloadKTX2} 
+          className="export-btn"
+          disabled={!basisModule || !!basisModuleError}
+          title={
+            basisModuleError 
+              ? `Error: ${basisModuleError}` 
+              : !basisModule 
+                ? 'Initializing Basis encoder...' 
+                : 'Download as KTX2 compressed texture'
+          }
+        >
+          📄 Download KTX2 {!basisModule && !basisModuleError && '(Loading...)'}
         </button>
         <div className="export-options">
           <label className="export-option">
