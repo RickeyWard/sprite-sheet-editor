@@ -30,7 +30,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const maxSize = 400;
+    const maxSize = 600; // Increased from 400 for better visibility
     const scale = Math.min(maxSize / image.width, maxSize / image.height, 1);
     
     canvas.width = image.width * scale;
@@ -48,22 +48,37 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     const spacing = config.spacing * scale;
     const margin = config.margin * scale;
     
+    // Ensure minimum visibility - if frames are too small, make them at least 2px
+    const minFrameSize = 2;
+    const visibleFrameWidth = Math.max(frameWidth, minFrameSize);
+    const visibleFrameHeight = Math.max(frameHeight, minFrameSize);
+    const visibleSpacing = Math.max(spacing, 0.5);
+    
     for (let row = 0; row < config.rows; row++) {
       for (let col = 0; col < config.columns; col++) {
         const x = margin + col * (frameWidth + spacing);
         const y = margin + row * (frameHeight + spacing);
         
-        if (x + frameWidth <= canvas.width && y + frameHeight <= canvas.height) {
-          ctx.strokeRect(x, y, frameWidth, frameHeight);
+        // Always draw the grid lines, even if very small
+        if (x < canvas.width && y < canvas.height) {
+          // Draw the frame rectangle
+          const rectWidth = Math.min(visibleFrameWidth, canvas.width - x);
+          const rectHeight = Math.min(visibleFrameHeight, canvas.height - y);
           
-          // Draw frame number
-          ctx.fillStyle = '#61dafb';
-          ctx.font = '12px monospace';
-          ctx.fillText(
-            `${row * config.columns + col + 1}`,
-            x + 4,
-            y + 16
-          );
+          if (rectWidth > 0 && rectHeight > 0) {
+            ctx.strokeRect(x, y, rectWidth, rectHeight);
+            
+            // Draw frame number only if there's enough space
+            if (rectWidth > 20 && rectHeight > 20) {
+              ctx.fillStyle = '#61dafb';
+              ctx.font = `${Math.max(8, Math.min(12, rectHeight / 3))}px monospace`;
+              ctx.fillText(
+                `${row * config.columns + col + 1}`,
+                x + 2,
+                y + Math.max(10, rectHeight / 3)
+              );
+            }
+          }
         }
       }
     }
