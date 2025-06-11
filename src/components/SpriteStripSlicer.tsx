@@ -56,8 +56,6 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     const frameHeight = config.frameHeight * scale;
     const spacing = config.spacing * scale;
     const margin = config.margin * scale;
-    const paddingX = config.paddingX * scale;
-    const paddingY = config.paddingY * scale;
     
     // Ensure minimum visibility - if frames are too small, make them at least 2px
     const minFrameSize = 2;
@@ -210,14 +208,12 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
   return (
     <div className="sprite-strip-slicer-overlay">
       <div className="sprite-strip-slicer">
-        <h3>Slice Sprite Strip</h3>
-        <p>
-          This image might be a sprite strip. Configure how to slice it into individual frames.
-        </p>
-        <p style={{ fontSize: '0.9rem', color: '#a0a0a0', marginBottom: '1rem' }}>
-          💡 <strong>Padding</strong> adds transparent space around each extracted frame, keeping the original content centered. 
-          Blue lines show what will be extracted from the source image.
-        </p>
+        <div className="slicer-header">
+          <h3>Slice Sprite Strip</h3>
+          <p>
+            This image might be a sprite strip. Configure how to slice it into individual frames.
+          </p>
+        </div>
         
         <div className="slicer-content">
           <div className="base-name-section">
@@ -430,23 +426,25 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
           </div>
         </div>
         
-        <div className="slicer-actions">
-          <button className="cancel-btn" onClick={onCancel}>
-            Cancel
-          </button>
-          <button className="keep-original-btn" onClick={onKeepOriginal}>
-            Keep as Single Image
-          </button>
-          <button 
-            className="slice-btn" 
-            onClick={handleSlice}
-            disabled={totalFrames === 0 || !editableBaseName.trim() || (createAnimation && !animationName.trim())}
-          >
-            {createAnimation 
-              ? `Slice & Create "${animationName}" Animation` 
-              : `Slice into ${totalFrames} Frames`
-            }
-          </button>
+        <div className="slicer-footer">
+          <div className="slicer-actions">
+            <button className="cancel-btn" onClick={onCancel}>
+              Cancel
+            </button>
+            <button className="keep-original-btn" onClick={onKeepOriginal}>
+              Keep as Single Image
+            </button>
+            <button 
+              className="slice-btn" 
+              onClick={handleSlice}
+              disabled={totalFrames === 0 || !editableBaseName.trim() || (createAnimation && !animationName.trim())}
+            >
+              {createAnimation 
+                ? `Slice & Create "${animationName}" Animation` 
+                : `Slice into ${totalFrames} Frames`
+              }
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1568,29 +1568,49 @@ body {
 .sprite-strip-slicer {
   background: #2d2d2d;
   border-radius: 12px;
-  padding: 2rem;
   max-width: 90vw;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: 95vh;
+  width: 1200px;
+  min-height: 500px;
   border: 1px solid #404040;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
 }
 
-.sprite-strip-slicer h3 {
+.slicer-header {
+  padding: 1rem;
+  border-bottom: 1px solid #404040;
+  flex-shrink: 0;
+}
+
+.slicer-header h3 {
   margin-bottom: 0.5rem;
   color: #61dafb;
 }
 
-.sprite-strip-slicer > p {
-  margin-bottom: 1.5rem;
+.slicer-header p {
+  margin-bottom: 1rem;
   color: #a0a0a0;
+}
+
+.slicer-header p:last-child {
+  margin-bottom: 0;
 }
 
 .slicer-content {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  margin-bottom: 2rem;
+  padding: 2rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.slicer-footer {
+  padding: 1rem;
+  border-top: 1px solid #404040;
+  flex-shrink: 0;
 }
 
 .grid-content {
