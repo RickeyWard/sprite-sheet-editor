@@ -37,9 +37,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFilesAdded }) => {
             <p>Drag and drop PNG or JSON files here, or click to select</p>
             <div className="file-format-info">
               <small>
-                • PNG images: Individual sprite frames<br/>
-                • JSON files: With base64 images or frame data<br/>
-                • PNG + JSON pairs: TexturePacker/Pixi.js format
+                <ul>
+                  <li>PNG images: Individual sprite frames</li>
+                  <li>JSON files: With base64 images or frame data</li>
+                  <li>PNG + JSON pairs: TexturePacker/Pixi.js format with matching filenames</li>
+                </ul>
               </small>
             </div>
             <button type="button" className="upload-btn">
