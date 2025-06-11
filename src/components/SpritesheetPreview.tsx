@@ -2,6 +2,38 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { PackedSheet } from '../types';
 import { downloadCanvas, downloadJSON } from '../utils/imageLoader';
 
+import wasmURL from '../libs/basis_encoder.wasm?url';
+declare global {
+  interface Window {
+    BasisEncoderModule: any;
+    wasm_basis_encoder_url: string;
+  }
+}
+window.wasm_basis_encoder_url = wasmURL;
+// @ts-ignore
+import * as basisEncoderModule from '../libs/basis_encoder.js';
+
+try {
+  basisEncoderModule.BASIS({
+  onRuntimeInitialized: () => {
+    console.log("BasisEncoderModule initialized");
+  }
+}).then((module: any) => {
+  window.BasisEncoderModule = module;
+
+  if (module.initializeBasis) {
+    module.initializeBasis();
+    console.log("BasisEncoderModule.initializeBasis() called successfully.");
+  }
+  else {
+    console.error("BasisEncoderModule.initializeBasis() is not available on the BasisEncoderModule object.");
+  }
+
+});
+} catch (error) {
+  console.error("Error initializing BASIS:", error);
+}
+
 interface SpritesheetPreviewProps {
   packedSheet: PackedSheet | null;
 }
@@ -152,6 +184,102 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   const handleDownloadPNG = () => {
     if (packedSheet) {
       downloadCanvas(packedSheet.canvas, 'spritesheet.png');
+    }
+  };
+
+  const handleDownloadKTX2 = async () => {
+    const downloadBtn = document.getElementById('download-ktx2-btn');
+    if (packedSheet) {
+      try {
+        downloadBtn?.setAttribute('disabled', 'true');
+
+        // Convert canvas to blob then to arrayBuffer
+        const blobData = await new Promise<Blob>(resolve => {
+          packedSheet.canvas.toBlob(blob => {
+            resolve(blob as Blob);
+          }, 'image/png');
+        });
+        const curLoadedImageData = await blobData.arrayBuffer();
+
+        const { BasisEncoder } = window.BasisEncoderModule;
+
+        const basisEncoder = new BasisEncoder();
+        basisEncoder.controlThreading(false, 4);
+        basisEncoder.setCreateKTX2File(true);
+        basisEncoder.setKTX2UASTCSupercompression(true);
+        basisEncoder.setKTX2SRGBTransferFunc(true);
+        var img_type = window.BasisEncoderModule.ldr_image_type.cPNGImage.value;
+        basisEncoder.setSliceSourceImage(0, new Uint8Array(curLoadedImageData), 0, 0, img_type);
+        basisEncoder.setFormatMode(1);
+        basisEncoder.setQualityLevel(10);
+
+        // set all the settings to the default values
+        // Use UASTC HDR quality (0=fastest)
+        // basisEncoder.setUASTCHDRQualityLevel(getUASTCHDRQuality());
+         
+        // basisEncoder.setASTC_HDR_6x6_Level(getASTCHDR6x6CompLevel());
+        // basisEncoder.setLambda(getASTC6x6RDOLambda());
+        // basisEncoder.setRec2020(elem('Rec2020').checked);
+
+        // basisEncoder.setDebug(elem('Debug').checked);
+        // basisEncoder.setComputeStats(elem('ComputeStats').checked);
+        // basisEncoder.setPerceptual(elem('SRGB').checked);
+        // basisEncoder.setMipSRGB(elem('SRGB').checked);
+
+        // const etc1SQualityLevel = parseInt(elem('EncodeQuality').value, 10);
+        // basisEncoder.setQualityLevel(etc1SQualityLevel);
+                          
+        // basisEncoder.setRDOUASTC(elem('UASTC_LDR_RDO').checked);
+        // basisEncoder.setRDOUASTCQualityScalar(getUASTCLDRRDOQuality());
+        
+        // basisEncoder.setMipGen(elem('Mipmaps').checked);
+        // basisEncoder.setCompressionLevel(getETC1SCompLevel());
+        // basisEncoder.setPackUASTCFlags(getUASTCLDRQuality());
+
+        const desiredBasisTexFormat = window.BasisEncoderModule.basis_tex_format.cUASTC4x4.value;
+        basisEncoder.setFormatMode(1);
+
+        if (desiredBasisTexFormat === window.BasisEncoderModule.basis_tex_format.cUASTC_HDR_4x4.value)
+            console.log('Encoding to UASTC HDR 4x4 quality level '); // + getUASTCHDRQuality());
+        else if (desiredBasisTexFormat === window.BasisEncoderModule.basis_tex_format.cASTC_HDR_6x6.value)
+            console.log('Encoding to ASTC HDR 6x6');
+        else if (desiredBasisTexFormat === window.BasisEncoderModule.basis_tex_format.cASTC_HDR_6x6_INTERMEDIATE.value)
+            console.log('Encoding to ASTC HDR 6x6 Intermediate');
+        else if (desiredBasisTexFormat === window.BasisEncoderModule.basis_tex_format.cUASTC4x4.value)
+            console.log('Encoding to UASTC LDR 4x4');
+        else 
+            console.log('Encoding to ETC1S quality level '); // + etc1SQualityLevel);
+
+         // Create a destination buffer to hold the compressed .basis file data. If this buffer isn't large enough compression will fail.
+        var ktx2FileData = new Uint8Array(1024 * 1024 * 24);
+        const startTime = performance.now();
+        let num_output_bytes = basisEncoder.encode(ktx2FileData);
+        const elapsed = performance.now() - startTime;
+        console.log('encoding time', elapsed.toFixed(2));
+
+        let actualKTX2FileData = new Uint8Array(ktx2FileData.buffer, 0, num_output_bytes);
+        basisEncoder.delete();
+
+        if (num_output_bytes == 0) {
+          console.log('encodeBasisTexture() failed!');
+        } else {
+          console.log('encodeBasisTexture() succeeded, output size ' + num_output_bytes);
+          const filename = 'spritesheet.ktx2';
+          const blob = new Blob([actualKTX2FileData], { type: 'image/ktx2' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        console.error('Error creating KTX2 file:', error);
+        alert('Error creating KTX2 file. This is a placeholder implementation.');
+      }
+      downloadBtn?.removeAttribute('disabled');
     }
   };
 
@@ -358,6 +486,9 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
         </button>
         <button onClick={handleDownloadJSON} className="export-btn">
           📄 Download JSON
+        </button>
+        <button id='download-ktx2-btn' onClick={handleDownloadKTX2} className="export-btn">
+          📄 Download KTX2
         </button>
         <div className="export-options">
           <label className="export-option">
