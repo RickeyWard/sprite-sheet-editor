@@ -40,6 +40,7 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
   const [includeImageData, setIncludeImageData] = useState(false);
+  const [useKTX2Format, setUseKTX2Format] = useState(false);
   const [autoFit, setAutoFit] = useState(true);
   const [marchingAntsOffset, setMarchingAntsOffset] = useState(0);
   const [basisModule, setBasisModule] = useState<BasisEncoderModule | null>(null);
@@ -203,6 +204,74 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     drawCanvas();
   }, [drawCanvas]);
 
+  const generateKTX2DataURL = async (): Promise<string | null> => {
+    if (!packedSheet || !basisModule || basisModuleError) {
+      return null;
+    }
+
+    try {
+      // Get raw pixel data from canvas
+      const canvas = packedSheet.canvas;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Failed to get canvas 2D context');
+      }
+      
+      // Get raw RGBA pixel data
+      const canvasImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixelData = new Uint8Array(canvasImageData.data.buffer);
+
+      // Create encoder instance
+      const encoder: BasisEncoder = new basisModule.BasisEncoder();
+      
+      // Configure encoder settings
+      encoder.controlThreading(false, 4);
+      encoder.setCreateKTX2File(true);
+      encoder.setKTX2UASTCSupercompression(true);
+      encoder.setKTX2SRGBTransferFunc(true);
+      
+      // Set source image - using raw RGBA pixel data
+      const canvasWidth = packedSheet.canvas.width;
+      const canvasHeight = packedSheet.canvas.height;
+      
+      // For raw RGBA data, we don't need to specify an image type - pass 0
+      const success = encoder.setSliceSourceImage(0, pixelData, canvasWidth, canvasHeight, 0);
+      
+      if (!success) {
+        throw new Error(`Failed to set source image data (${canvasWidth}x${canvasHeight}, ${pixelData.length} bytes)`);
+      }
+
+      // Configure format and quality
+      encoder.setFormatMode(1); // UASTC mode
+      encoder.setQualityLevel(128); // High quality
+      
+      // Create output buffer
+      const outputBuffer = new Uint8Array(1024 * 1024 * 24);
+      
+      // Encode the image
+      const outputSize = encoder.encode(outputBuffer);
+
+      // Clean up encoder
+      encoder.delete();
+
+      if (outputSize === 0) {
+        throw new Error('Encoding failed - output size is 0');
+      }
+
+      // Create final data array with exact size
+      const ktx2Data = new Uint8Array(outputBuffer.buffer, 0, outputSize);
+      
+      // Convert to base64 and create data URL
+      const base64String = btoa(String.fromCharCode(...ktx2Data));
+      return `data:image/ktx2;base64,${base64String}`;
+      
+    } catch (error) {
+      console.error('Error generating KTX2 data URL:', error);
+      return null;
+    }
+  };
+
   const handleDownloadPNG = () => {
     if (packedSheet) {
       downloadCanvas(packedSheet.canvas, 'spritesheet.png');
@@ -322,21 +391,29 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
     }
   };
 
-  const handleDownloadJSON = () => {
+  const handleDownloadJSON = async () => {
     if (packedSheet) {
+      let spritesheetData = { ...packedSheet.spritesheet };
+      
       if (includeImageData) {
-        // Create a copy of the spritesheet data with image data URL
-        const spritesheetWithImage = {
-          ...packedSheet.spritesheet,
-          meta: {
-            ...packedSheet.spritesheet.meta,
-            image: packedSheet.canvas.toDataURL('image/png')
+        const updatedMeta = { ...packedSheet.spritesheet.meta };
+        
+        if (useKTX2Format) {
+          const ktx2DataURL = await generateKTX2DataURL();
+          if (ktx2DataURL) {
+            updatedMeta.image = ktx2DataURL;
           }
+        } else {
+          updatedMeta.image = packedSheet.canvas.toDataURL('image/png');
+        }
+        
+        spritesheetData = {
+          ...spritesheetData,
+          meta: updatedMeta
         };
-        downloadJSON(spritesheetWithImage, 'spritesheet.json');
-      } else {
-        downloadJSON(packedSheet.spritesheet, 'spritesheet.json');
       }
+      
+      downloadJSON(spritesheetData, 'spritesheet.json');
     }
   };
 
@@ -550,6 +627,36 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
             />
             Include image data URL in JSON
           </label>
+          {includeImageData && (
+            <div className="image-format-options" style={{ marginLeft: '20px', marginTop: '8px' }}>
+              <label className="export-option">
+                <input
+                  type="radio"
+                  name="imageFormat"
+                  checked={!useKTX2Format}
+                  onChange={() => setUseKTX2Format(false)}
+                />
+                PNG format
+              </label>
+              <label className="export-option">
+                <input
+                  type="radio"
+                  name="imageFormat"
+                  checked={useKTX2Format}
+                  onChange={() => setUseKTX2Format(true)}
+                  disabled={!basisModule || !!basisModuleError}
+                  title={
+                    basisModuleError 
+                      ? `Error: ${basisModuleError}` 
+                      : !basisModule 
+                        ? 'Initializing Basis encoder...' 
+                        : 'Use KTX2 compressed format'
+                  }
+                />
+                KTX2 format {!basisModule && !basisModuleError && '(Loading...)'}
+              </label>
+            </div>
+          )}
         </div>
       </div>
       
@@ -561,7 +668,9 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
               ...packedSheet.spritesheet,
               meta: {
                 ...packedSheet.spritesheet.meta,
-                image: packedSheet.canvas.toDataURL('image/png')
+                image: useKTX2Format 
+                  ? '[KTX2 data URL - click download to generate]'
+                  : packedSheet.canvas.toDataURL('image/png')
               }
             }, null, 2) :
             JSON.stringify(spritesheet, null, 2)
