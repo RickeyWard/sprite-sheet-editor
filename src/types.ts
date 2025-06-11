@@ -56,7 +56,7 @@ export interface PackingOptions {
   trimWhitespace: boolean; // remove transparent pixels
   forcePowerOf2: boolean; // force canvas to power-of-2 dimensions
   allowRotation: boolean; // allow sprite rotation for better packing
-  layout: 'compact' | 'horizontal' | 'vertical'; // packing layout algorithm
+  layout: 'compact' | 'horizontal' | 'vertical' | 'by-animation'; // packing layout algorithm
 }
 
 export interface PackedSheet {

@@ -105,7 +105,7 @@ function App() {
               alert(`Error processing ${jsonFile.name} with ${matchingImage.name}. Please check the file formats.`);
             }
           } else {
-            alert(`Error processing ${jsonFile.name}. Please check it contains valid base64 image data or provide a matching image file.`);
+            alert(`Error processing ${jsonFile.name}. Please check it contains valid base64 image data or provide a matching image file (with the same base name).`);
           }
         }
       }

@@ -19,34 +19,34 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
 
   const handlePreset = (preset: 'preserve' | 'tight' | 'standard' | 'loose') => {
     const presets: Record<string, PackingOptions> = {
-      tight: {
-        spacing: 0,
-        trimWhitespace: true,
-        forcePowerOf2: true,
-        allowRotation: false,
-        layout: 'compact'
-      },
-      standard: {
-        spacing: 2,
-        trimWhitespace: false,
-        forcePowerOf2: true,
-        allowRotation: false,
-        layout: 'compact'
-      },
-      loose: {
-        spacing: 4,
-        trimWhitespace: false,
-        forcePowerOf2: false,
-        allowRotation: false,
-        layout: 'compact'
-      },
-      preserve: {
-        spacing: 0,
-        trimWhitespace: false,
-        forcePowerOf2: false,
-        allowRotation: false,
-        layout: 'compact'
-      }
+              tight: {
+          spacing: 0,
+          trimWhitespace: true,
+          forcePowerOf2: true,
+          allowRotation: false,
+          layout: 'compact'
+        },
+        standard: {
+          spacing: 2,
+          trimWhitespace: false,
+          forcePowerOf2: true,
+          allowRotation: false,
+          layout: 'compact'
+        },
+        loose: {
+          spacing: 4,
+          trimWhitespace: false,
+          forcePowerOf2: false,
+          allowRotation: false,
+          layout: 'compact'
+        },
+        preserve: {
+          spacing: 0,
+          trimWhitespace: false,
+          forcePowerOf2: false,
+          allowRotation: false,
+          layout: 'by-animation'
+        }
     };
     onOptionsChange(presets[preset]);
   };
@@ -169,6 +169,18 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
             <span className="radio-label">
               Vertical
               <small>Arrange sprites in columns from top to bottom</small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="layout"
+              checked={options.layout === 'by-animation'}
+              onChange={() => handleChange('layout', 'by-animation')}
+            />
+            <span className="radio-label">
+              By Animation
+              <small>Each animation gets its own horizontal row</small>
             </span>
           </label>
         </div>

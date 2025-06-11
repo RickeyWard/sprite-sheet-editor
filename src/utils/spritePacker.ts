@@ -170,6 +170,82 @@ function packVertical(
   return packed;
 }
 
+// By-animation layout - one horizontal row per animation
+function packByAnimation(
+  frames: SpriteFrame[],
+  animations: Animation[],
+  initialWidth: number,
+  initialHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+  options: PackingOptions
+): PackedRect[] {
+  const packed: PackedRect[] = [];
+  let currentY = 0;
+
+  // Group frames by animation
+  const animationFrames: { animation: Animation; frames: SpriteFrame[] }[] = [];
+  const usedFrameIds = new Set<string>();
+
+  // Process each animation
+  for (const animation of animations) {
+    const animFrames = animation.frameIds
+      .map(id => frames.find(f => f.id === id))
+      .filter(Boolean) as SpriteFrame[];
+    
+    if (animFrames.length > 0) {
+      animationFrames.push({ animation, frames: animFrames });
+      animFrames.forEach(frame => usedFrameIds.add(frame.id));
+    }
+  }
+
+  // Add orphaned frames (not part of any animation) as a separate group
+  const orphanedFrames = frames.filter(frame => !usedFrameIds.has(frame.id));
+  if (orphanedFrames.length > 0) {
+    animationFrames.push({ 
+      animation: { id: 'orphaned', name: 'Individual Frames', frameIds: [] }, 
+      frames: orphanedFrames 
+    });
+  }
+
+  // Pack each animation group as a horizontal row
+  for (const { frames: animFrames } of animationFrames) {
+    let currentX = 0;
+    let rowHeight = 0;
+
+    // Calculate row height
+    rowHeight = Math.max(...animFrames.map(frame => frame.height));
+
+    // Check if this row will fit
+    if (currentY + rowHeight > maxHeight) {
+      break; // Can't fit more rows
+    }
+
+    // Pack frames in this row
+    for (const frame of animFrames) {
+      // Check if frame fits in current row width
+      if (currentX + frame.width > maxWidth) {
+        break; // Skip frames that don't fit
+      }
+
+      packed.push({
+        x: currentX,
+        y: currentY,
+        width: frame.width,
+        height: frame.height,
+        frame
+      });
+
+      currentX += frame.width;
+    }
+
+    // Move to next row
+    currentY += rowHeight;
+  }
+
+  return packed;
+}
+
 export async function packSprites(
   frames: SpriteFrame[], 
   animations: Animation[], 
@@ -226,6 +302,8 @@ export async function packSprites(
     packed = packHorizontal(spacedFrames, currentWidth, currentHeight, maxWidth, maxHeight, options);
   } else if (options.layout === 'vertical') {
     packed = packVertical(spacedFrames, currentWidth, currentHeight, maxWidth, maxHeight, options);
+  } else if (options.layout === 'by-animation') {
+    packed = packByAnimation(spacedFrames, animations, currentWidth, currentHeight, maxWidth, maxHeight, options);
   } else {
     // Compact layout - try packing with increasing canvas sizes
     while (packed.length < spacedFrames.length && attempts < maxAttempts) {
