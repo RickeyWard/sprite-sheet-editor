@@ -59,7 +59,7 @@ export const PackingSettings: React.FC<PackingSettingsProps> = ({
         <span>Quick Presets:</span>
         <button 
           onClick={() => handlePreset('preserve')} 
-          className="preset-option-btn preserve-preset"
+          className="preset-option-btn"
           title="Keep original dimensions, minimal spacing, no trimming"
         >
           Preserve

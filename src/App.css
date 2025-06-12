@@ -1068,16 +1068,6 @@ body {
   background: #505050;
 }
 
-.preserve-preset {
-  background: #28a745 !important;
-  color: white !important;
-  font-weight: 500 !important;
-}
-
-.preserve-preset:hover {
-  background: #34ce57 !important;
-}
-
 .packing-options-grid {
   display: flex;
   flex-direction: column;

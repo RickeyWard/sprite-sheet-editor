@@ -43,24 +43,6 @@ export async function loadKTX2ToCanvas(ktx2Data: Uint8Array): Promise<HTMLCanvas
 
   const width = ktx2File.getWidth();
   const height = ktx2File.getHeight();
-  const basisTexFormat = ktx2File.getBasisTexFormat();
-  const is_uastc = ktx2File.isUASTC();
-  const is_hdr = ktx2File.isHDR();
-  const layers = ktx2File.getLayers();
-  const levels = ktx2File.getLevels();
-  const faces = ktx2File.getFaces();
-  const has_alpha = ktx2File.getHasAlpha();
-
-  console.log('ktx2File info -----');
-  console.log('width', width);
-  console.log('height', height);
-  console.log('basisTexFormat', basisTexFormat);
-  console.log('is_uastc', is_uastc);
-  console.log('is_hdr', is_hdr);
-  console.log('layers', layers);
-  console.log('levels', levels);
-  console.log('faces', faces);
-  console.log('has_alpha', has_alpha);
 
   if (!ktx2File.startTranscoding()) {
     console.warn('startTranscoding failed');
