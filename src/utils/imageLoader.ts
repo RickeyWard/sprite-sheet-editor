@@ -125,6 +125,12 @@ export async function loadKTX2FromFile(file: File): Promise<HTMLImageElement> {
 }
 
 export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+  // Check if it's a KTX2 file and handle it specially
+  if (isKTX2File(file)) {
+    return loadKTX2FromFile(file);
+  }
+  
+  // Handle regular image files
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
