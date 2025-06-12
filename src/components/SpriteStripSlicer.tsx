@@ -297,7 +297,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     setEstimatedFrameCount(null);
     setCalculationSkipped(false);
     
-    const totalFrames = config.columns * config.rows;
+    // const totalFrames = config.columns * config.rows;
     
     try {
       let validFrameCount = 0;
