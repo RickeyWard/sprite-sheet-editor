@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { SpriteFrame } from '../types';
 import type { SliceConfig } from '../utils/spriteStripSlicer';
 import { suggestSliceConfig, sliceSpriteStrip } from '../utils/spriteStripSlicer';
+import { isFrameEmptyOrSolid } from '../utils/frameAnalyzer';
 
 interface SpriteStripSlicerProps {
   image: HTMLImageElement;
@@ -24,6 +25,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
   const [createAnimation, setCreateAnimation] = useState(true);
   const [animationName, setAnimationName] = useState(baseName);
   const [editableBaseName, setEditableBaseName] = useState(baseName);
+  const [removeEmptyOrSolid, setRemoveEmptyOrSolid] = useState(true);
 
   useEffect(() => {
     // Create preview canvas
@@ -174,7 +176,19 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
 
   const handleSlice = async () => {
     try {
-      const frames = await sliceSpriteStrip(image, config, editableBaseName);
+      let frames = await sliceSpriteStrip(image, config, editableBaseName);
+      
+      // Filter out empty or solid frames if option is enabled
+      if (removeEmptyOrSolid) {
+        const originalCount = frames.length;
+        frames = frames.filter(frame => !isFrameEmptyOrSolid(frame));
+        const removedCount = originalCount - frames.length;
+        
+        if (removedCount > 0) {
+          console.log(`Filtered out ${removedCount} empty or solid frames`);
+        }
+      }
+      
       const animationOption = createAnimation && animationName.trim() 
         ? { name: animationName.trim() } 
         : undefined;
@@ -385,6 +399,17 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
                     />
                   </label>
                 </div>
+              </div>
+              
+              <div className="animation-checkbox">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={removeEmptyOrSolid}
+                    onChange={(e) => setRemoveEmptyOrSolid(e.target.checked)}
+                  />
+                  Ignore fully transparent/solid frames
+                </label>
               </div>
               
               <div className="config-info">
