@@ -4,7 +4,6 @@ import { downloadCanvas, downloadJSON } from '../utils/imageLoader';
 
 import {
   initBasisEncoderGlobal,
-  type BasisEncoderModule,
   type BasisEncoder
 } from '../libs/basis-encoder-wrapper';
 
