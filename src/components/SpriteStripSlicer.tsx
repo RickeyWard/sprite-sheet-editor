@@ -26,6 +26,8 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
   const [animationName, setAnimationName] = useState(baseName);
   const [editableBaseName, setEditableBaseName] = useState(baseName);
   const [removeEmptyOrSolid, setRemoveEmptyOrSolid] = useState(true);
+  const [estimatedFrameCount, setEstimatedFrameCount] = useState<number | null>(null);
+  const [calculationSkipped, setCalculationSkipped] = useState(false);
 
   useEffect(() => {
     // Create preview canvas
@@ -173,6 +175,219 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
     
     setPaddingPreviewCanvas(canvas);
   }, [image, config]);
+
+  // Calculate estimated frame count after filtering
+  useEffect(() => {
+    if (!removeEmptyOrSolid) {
+      setEstimatedFrameCount(null);
+      return;
+    }
+
+    // Immediately show loading state during debounce
+    setEstimatedFrameCount(null);
+    setCalculationSkipped(false);
+
+    const calculateEstimatedFrames = (forceCalculation = false) => {
+      try {
+        const totalFrames = config.columns * config.rows;
+        
+        // Skip calculation for very large grids to avoid performance issues
+        if (totalFrames > 400 && !forceCalculation) {
+          setEstimatedFrameCount(null);
+          setCalculationSkipped(true);
+          return;
+        }
+        
+        setCalculationSkipped(false);
+        
+        let validFrameCount = 0;
+        
+        for (let row = 0; row < config.rows; row++) {
+          for (let col = 0; col < config.columns; col++) {
+            const sourceX = config.margin + col * (config.frameWidth + config.spacing);
+            const sourceY = config.margin + row * (config.frameHeight + config.spacing);
+            
+            // Skip if source coordinates are out of bounds
+            if (sourceX + config.frameWidth > image.width || 
+                sourceY + config.frameHeight > image.height) {
+              continue;
+            }
+            
+            // Create a temporary canvas to extract the frame
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            if (!tempCtx) continue;
+            
+            tempCanvas.width = config.frameWidth;
+            tempCanvas.height = config.frameHeight;
+            tempCtx.drawImage(
+              image,
+              sourceX, sourceY, config.frameWidth, config.frameHeight,
+              0, 0, config.frameWidth, config.frameHeight
+            );
+            
+            // Analyze the canvas directly instead of creating a SpriteFrame
+            const imageData = tempCtx.getImageData(0, 0, config.frameWidth, config.frameHeight);
+            const data = imageData.data;
+            
+            // Check if frame is completely transparent
+            let isTransparent = true;
+            for (let i = 3; i < data.length; i += 4) { // Every 4th value is alpha
+              if (data[i] > 0) { // Found a non-transparent pixel
+                isTransparent = false;
+                break;
+              }
+            }
+            
+            // If transparent, skip this frame
+            if (isTransparent) {
+              continue;
+            }
+            
+            // Check if frame is solid color
+            let isSolidColor = true;
+            let firstR = -1, firstG = -1, firstB = -1, firstA = -1;
+            
+            // Find the first non-transparent pixel for reference
+            for (let i = 0; i < data.length; i += 4) {
+              if (data[i + 3] > 0) {
+                firstR = data[i];
+                firstG = data[i + 1];
+                firstB = data[i + 2];
+                firstA = data[i + 3];
+                break;
+              }
+            }
+            
+            // Check if all non-transparent pixels have the same color
+            for (let i = 0; i < data.length; i += 4) {
+              const alpha = data[i + 3];
+              
+              // Skip transparent pixels
+              if (alpha === 0) continue;
+              
+              // Check if this pixel matches the reference color
+              if (data[i] !== firstR || data[i + 1] !== firstG || 
+                  data[i + 2] !== firstB || data[i + 3] !== firstA) {
+                isSolidColor = false;
+                break;
+              }
+            }
+            
+            // Count frame as valid if it's not transparent and not solid color
+            if (!isSolidColor) {
+              validFrameCount++;
+            }
+          }
+        }
+        
+        setEstimatedFrameCount(validFrameCount);
+      } catch (error) {
+        console.error('Error calculating estimated frame count:', error);
+        setEstimatedFrameCount(null);
+      }
+    };
+
+    // Debounce the calculation to avoid excessive computation
+    const timeoutId = setTimeout(calculateEstimatedFrames, 800);
+    return () => clearTimeout(timeoutId);
+  }, [image, config, removeEmptyOrSolid]);
+
+  const forceEstimateCalculation = () => {
+    setEstimatedFrameCount(null);
+    setCalculationSkipped(false);
+    
+    const totalFrames = config.columns * config.rows;
+    
+    try {
+      let validFrameCount = 0;
+      
+      for (let row = 0; row < config.rows; row++) {
+        for (let col = 0; col < config.columns; col++) {
+          const sourceX = config.margin + col * (config.frameWidth + config.spacing);
+          const sourceY = config.margin + row * (config.frameHeight + config.spacing);
+          
+          // Skip if source coordinates are out of bounds
+          if (sourceX + config.frameWidth > image.width || 
+              sourceY + config.frameHeight > image.height) {
+            continue;
+          }
+          
+          // Create a temporary canvas to extract the frame
+          const tempCanvas = document.createElement('canvas');
+          const tempCtx = tempCanvas.getContext('2d');
+          if (!tempCtx) continue;
+          
+          tempCanvas.width = config.frameWidth;
+          tempCanvas.height = config.frameHeight;
+          tempCtx.drawImage(
+            image,
+            sourceX, sourceY, config.frameWidth, config.frameHeight,
+            0, 0, config.frameWidth, config.frameHeight
+          );
+          
+          // Analyze the canvas directly instead of creating a SpriteFrame
+          const imageData = tempCtx.getImageData(0, 0, config.frameWidth, config.frameHeight);
+          const data = imageData.data;
+          
+          // Check if frame is completely transparent
+          let isTransparent = true;
+          for (let i = 3; i < data.length; i += 4) { // Every 4th value is alpha
+            if (data[i] > 0) { // Found a non-transparent pixel
+              isTransparent = false;
+              break;
+            }
+          }
+          
+          // If transparent, skip this frame
+          if (isTransparent) {
+            continue;
+          }
+          
+          // Check if frame is solid color
+          let isSolidColor = true;
+          let firstR = -1, firstG = -1, firstB = -1, firstA = -1;
+          
+          // Find the first non-transparent pixel for reference
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] > 0) {
+              firstR = data[i];
+              firstG = data[i + 1];
+              firstB = data[i + 2];
+              firstA = data[i + 3];
+              break;
+            }
+          }
+          
+          // Check if all non-transparent pixels have the same color
+          for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3];
+            
+            // Skip transparent pixels
+            if (alpha === 0) continue;
+            
+            // Check if this pixel matches the reference color
+            if (data[i] !== firstR || data[i + 1] !== firstG || 
+                data[i + 2] !== firstB || data[i + 3] !== firstA) {
+              isSolidColor = false;
+              break;
+            }
+          }
+          
+          // Count frame as valid if it's not transparent and not solid color
+          if (!isSolidColor) {
+            validFrameCount++;
+          }
+        }
+      }
+      
+      setEstimatedFrameCount(validFrameCount);
+    } catch (error) {
+      console.error('Error calculating estimated frame count:', error);
+      setEstimatedFrameCount(null);
+      setCalculationSkipped(false);
+    }
+  };
 
   const handleSlice = async () => {
     try {
@@ -413,7 +628,37 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
               </div>
               
               <div className="config-info">
-                <p><strong>Total frames:</strong> {totalFrames}</p>
+                <p><strong>Total grid frames:</strong> {totalFrames}</p>
+                {removeEmptyOrSolid && (
+                  <p>
+                    <strong>Estimated frames after filtering:</strong>{' '}
+                    {calculationSkipped ? (
+                      <span>
+                        Too many frames ({totalFrames > 400 ? 'calculation skipped' : '—'}){' '}
+                        <button 
+                          type="button" 
+                          className="force-calculate-link"
+                          onClick={forceEstimateCalculation}
+                          title="This may take a moment for large sprite sheets"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#61dafb',
+                            textDecoration: 'underline',
+                            cursor: 'pointer',
+                            padding: 0,
+                            font: 'inherit',
+                            fontSize: 'inherit'
+                          }}
+                        >
+                          Calculate anyway
+                        </button>
+                      </span>
+                    ) : (
+                      estimatedFrameCount !== null ? estimatedFrameCount : '—'
+                    )}
+                  </p>
+                )}
                 <p><strong>Image size:</strong> {image.width} × {image.height}</p>
                 <p><strong>Source frame size:</strong> {config.frameWidth} × {config.frameHeight}</p>
                 <p><strong>Final frame size:</strong> {config.frameWidth + config.paddingX * 2} × {config.frameHeight + config.paddingY * 2}</p>
@@ -466,7 +711,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
             >
               {createAnimation 
                 ? `Slice & Create "${animationName}" Animation` 
-                : `Slice into ${totalFrames} Frames`
+                : `Slice into ${removeEmptyOrSolid && estimatedFrameCount !== null ? estimatedFrameCount : totalFrames} Frames`
               }
             </button>
           </div>
