@@ -1,5 +1,5 @@
 
-var BASIS = (() => {
+export var BASIS = (() => {
   var _scriptName = typeof document != 'undefined' ? document.currentScript?.src : undefined;
   if (typeof __filename != 'undefined') _scriptName ||= __filename;
   return (
@@ -456,8 +456,8 @@ var isFileURI = (filename) => filename.startsWith('file://');
 // end include: URIUtils.js
 // include: runtime_exceptions.js
 // end include: runtime_exceptions.js
-function findWasmBinary() {
-    var f = 'basis_transcoder.wasm';
+function findWasmBinary(url) {
+    var f = url || 'basis_transcoder.wasm';
     if (!isDataURI(f)) {
       return locateFile(f);
     }
@@ -548,7 +548,7 @@ function getWasmImports() {
 
 // Create the wasm instance.
 // Receives the wasm imports, returns the exports.
-function createWasm() {
+function createWasm(url) {
   var info = getWasmImports();
   // Load the wasm module and create an instance of using native support in the JS engine.
   // handle a generated wasm instance, receiving its exports and
@@ -599,7 +599,7 @@ function createWasm() {
     }
   }
 
-  if (!wasmBinaryFile) wasmBinaryFile = findWasmBinary();
+  if (!wasmBinaryFile) wasmBinaryFile = findWasmBinary(url);
 
   // If instantiation fails, reject the module ready promise.
   instantiateAsync(wasmBinary, wasmBinaryFile, info, receiveInstantiationResult).catch(readyPromiseReject);
@@ -3254,7 +3254,7 @@ var wasmImports = {
   /** @export */
   fd_write: _fd_write
 };
-var wasmExports = createWasm();
+var wasmExports = createWasm(window.wasm_basis_transcoder_url);
 var ___wasm_call_ctors = () => (___wasm_call_ctors = wasmExports['__wasm_call_ctors'])();
 var ___getTypeName = (a0) => (___getTypeName = wasmExports['__getTypeName'])(a0);
 var _malloc = (a0) => (_malloc = wasmExports['malloc'])(a0);

@@ -42,6 +42,7 @@
  */
 
 import type { SpriteFrame, Animation } from '../types';
+import { loadKTX2ToCanvas } from './imageLoader';
 
 export interface SpritesheetData {
   frames: SpriteFrame[];
@@ -50,23 +51,49 @@ export interface SpritesheetData {
 }
 
 export function loadImageFromBase64(base64Data: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    
-    img.onload = () => {
-      resolve(img);
-    };
-    
-    img.onerror = () => {
-      reject(new Error('Failed to load image from base64 data'));
-    };
-    
-    // Ensure the base64 data has the proper prefix
-    if (!base64Data.startsWith('data:image/')) {
-      base64Data = `data:image/png;base64,${base64Data}`;
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Check if it's a KTX2 data URL
+      if (base64Data.startsWith('data:image/ktx2;base64,')) {
+        // Extract the base64 part and decode KTX2
+        const base64String = base64Data.split(',')[1];
+        const binaryString = atob(base64String);
+        const ktx2Data = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          ktx2Data[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Decode KTX2 to canvas
+        const canvas = await loadKTX2ToCanvas(ktx2Data);
+        
+        // Convert canvas to image
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to create image from KTX2 data'));
+        img.src = canvas.toDataURL('image/png');
+        return;
+      }
+      
+      // Handle regular image data URLs
+      const img = new Image();
+      
+      img.onload = () => {
+        resolve(img);
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image from base64 data'));
+      };
+      
+      // Ensure the base64 data has the proper prefix
+      if (!base64Data.startsWith('data:image/')) {
+        base64Data = `data:image/png;base64,${base64Data}`;
+      }
+      
+      img.src = base64Data;
+    } catch (error) {
+      reject(new Error(`Failed to load image from base64: ${error instanceof Error ? error.message : 'Unknown error'}`));
     }
-    
-    img.src = base64Data;
   });
 }
 
@@ -339,21 +366,44 @@ function createAnimationFromData(
 }
 
 export async function handleImageWithJSON(imageFile: File, jsonFile: File): Promise<SpritesheetData> {
-  // Load the image
-  const image = new Image();
-  const imageUrl = URL.createObjectURL(imageFile);
+  // Load the image - check if it's KTX2 or regular image
+  let image: HTMLImageElement;
   
-  await new Promise<void>((resolve, reject) => {
-    image.onload = () => {
-      URL.revokeObjectURL(imageUrl);
-      resolve();
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(imageUrl);
-      reject(new Error('Failed to load image'));
-    };
-    image.src = imageUrl;
-  });
+  if (imageFile.name.toLowerCase().endsWith('.ktx2') || imageFile.type === 'image/ktx2') {
+    // Handle KTX2 file
+    const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as ArrayBuffer);
+      reader.onerror = () => reject(new Error('Failed to read KTX2 file'));
+      reader.readAsArrayBuffer(imageFile);
+    });
+    
+    const ktx2Data = new Uint8Array(arrayBuffer);
+    const canvas = await loadKTX2ToCanvas(ktx2Data);
+    
+    image = new Image();
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('Failed to create image from KTX2 canvas'));
+      image.src = canvas.toDataURL('image/png');
+    });
+  } else {
+    // Handle regular image file
+    image = new Image();
+    const imageUrl = URL.createObjectURL(imageFile);
+    
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => {
+        URL.revokeObjectURL(imageUrl);
+        resolve();
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(imageUrl);
+        reject(new Error('Failed to load image'));
+      };
+      image.src = imageUrl;
+    });
+  }
   
   // Parse the JSON file
   const jsonData = await new Promise<any>((resolve, reject) => {

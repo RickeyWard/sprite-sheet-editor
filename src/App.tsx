@@ -62,7 +62,9 @@ function App() {
       for (const file of files) {
         if (file.type === 'application/json') {
           jsonFiles.push(file);
-        } else if (file.type.startsWith('image/png')) {
+        } else if (file.type.startsWith('image/png') || 
+                   file.name.toLowerCase().endsWith('.ktx2') || 
+                   file.type === 'image/ktx2') {
           imageFiles.push(file);
         }
       }

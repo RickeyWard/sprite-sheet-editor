@@ -1,31 +1,23 @@
-// Re-export all Basis Universal TypeScript wrappers
-// This ensures proper module resolution and avoids conflicts with JS files
+// Re-export only working Basis Universal components
+// Avoid re-exporting from TypeScript modules that have JS export conflicts
 
+// Export working encoder wrapper
 export {
-  initBasisEncoder,
   initBasisEncoderGlobal,
-  BASIS as BasisEncoderFactory,
-  BasisTextureFormat,
-  ImageType,
-  InternalError,
-  BindingError,
   type BasisEncoder,
   type BasisEncoderModule,
-  type BasisEncoderFactory as BasisEncoderFactoryType,
   type ModuleConfig
-} from './basis_encoder';
+} from './basis-encoder-wrapper';
 
+// Export working transcoder wrapper
 export {
-  initBasisTranscoder,
   initBasisTranscoderGlobal,
-  getBasisFileInfo,
-  BASIS as BasisTranscoderFactory,
   TranscoderTextureFormat,
   BasisTextureType,
   type BasisTranscoder,
-  type BasisTranscoderModule,
-  type BasisTranscoderFactory as BasisTranscoderFactoryType,
-  type BasisFileInfo,
-  type BasisImageInfo,
-  type BasisImageLevelInfo
-} from './basis_transcoder'; 
+  type BasisTranscoderModule
+} from './basis-transcoder-wrapper';
+
+// Note: Direct imports from basis_encoder.ts and basis_transcoder.ts may have 
+// export conflicts with their compiled JS counterparts. Use the wrapper or 
+// import the factory functions directly if needed. 
