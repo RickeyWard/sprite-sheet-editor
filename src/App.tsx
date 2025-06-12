@@ -11,6 +11,7 @@ import { createSpriteFrameFromFile, loadImageFromFile, downloadCanvas } from './
 import { packSprites } from './utils/spritePacker';
 import { detectPotentialSpriteStrip } from './utils/spriteStripSlicer';
 import { decodeSpritesheetJSON, handleImageWithJSON } from './utils/jsonDecoder';
+import { analyzeFrames } from './utils/frameAnalyzer';
 import type { SpriteFrame, Animation, PackedSheet, PackingOptions } from './types';
 import './App.css';
 
@@ -261,6 +262,44 @@ function App() {
     });
   };
 
+  const handleRemoveEmptyOrSolidFrames = () => {
+    if (frames.length === 0) return;
+    
+    const analysis = analyzeFrames(frames);
+    
+    if (analysis.emptyOrSolid.length === 0) {
+      alert('No transparent or solid color frames found to remove.');
+      return;
+    }
+    
+    const message = `Found ${analysis.emptyOrSolid.length} frames to remove:\n` +
+      `- ${analysis.transparent.length} completely transparent frames\n` +
+      `- ${analysis.solidColor.length} solid color frames\n\n` +
+      `Do you want to remove these frames?`;
+    
+    if (confirm(message)) {
+      const framesToRemoveIds = new Set(analysis.emptyOrSolid.map(frame => frame.id));
+      
+      // Remove frames
+      setFrames(prev => prev.filter(f => !framesToRemoveIds.has(f.id)));
+      
+      // Remove from selection
+      setSelectedFrames(prev => {
+        const newSet = new Set(prev);
+        framesToRemoveIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+      
+      // Remove from animations
+      setAnimations(prev => prev.map(anim => ({
+        ...anim,
+        frameIds: anim.frameIds.filter(id => !framesToRemoveIds.has(id))
+      })).filter(anim => anim.frameIds.length > 0));
+      
+      alert(`Removed ${analysis.emptyOrSolid.length} frames.`);
+    }
+  };
+
   const processNextPendingFile = async () => {
     if (pendingFiles.length > 0) {
       const nextFile = pendingFiles[0];
@@ -403,6 +442,14 @@ function App() {
                 disabled={selectedFrames.size === 0}
               >
                 📥 Download Selected
+              </button>
+              <button 
+                onClick={handleRemoveEmptyOrSolidFrames} 
+                className="cleanup-btn"
+                disabled={frames.length === 0}
+                title="Remove frames that are completely transparent or solid single color"
+              >
+                🧹 Clean Empty/Solid
               </button>
               <span className="selection-count">
                 {selectedFrames.size} of {frames.length} selected
