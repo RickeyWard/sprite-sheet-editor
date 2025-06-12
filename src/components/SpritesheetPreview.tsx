@@ -10,9 +10,10 @@ import {
 
 interface SpritesheetPreviewProps {
   packedSheet: PackedSheet | null;
+  frames: { length: number }; // Just need the length for checking if frames exist
 }
 
-export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSheet }) => {
+export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSheet, frames }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -442,11 +443,23 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   }, [containerRef.current, setZoom, autoFit, calculateAutoFitZoom]);
 
   if (!packedSheet) {
+    const hasFrames = frames.length > 0;
+    
     return (
       <div className="spritesheet-preview">
         <h3>Spritesheet Preview</h3>
         <div className="no-preview">
-          <p>Add some sprites to see the packed spritesheet</p>
+          {hasFrames ? (
+            <div>
+              <p>❌ Unable to pack sprites</p>
+              <p style={{ fontSize: '0.9rem', color: '#ff6b6b', marginTop: '8px' }}>
+                The sprites are too large to fit in the current maximum canvas size.
+                Try reducing the canvas size constraints, using fewer sprites, or enabling trimming/spacing options.
+              </p>
+            </div>
+          ) : (
+            <p>Add some sprites to see the packed spritesheet</p>
+          )}
         </div>
       </div>
     );

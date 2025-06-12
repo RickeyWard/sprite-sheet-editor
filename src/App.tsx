@@ -481,7 +481,7 @@ function App() {
         </div>
 
         <div className="right-panel">
-          <SpritesheetPreview packedSheet={packedSheet} />
+          <SpritesheetPreview packedSheet={packedSheet} frames={frames} />
           
           <section className="animation-preview-section">
             <AnimationPreview
