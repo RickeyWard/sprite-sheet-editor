@@ -6,7 +6,7 @@ Try it now: [Sprite Sheet Editor](https://rickeyward.github.io/sprite-sheet-edit
 
 ## 🤖 AI-Assisted Development Experiment
 
-**This entire project was built using only AI prompting** through Cursor IDE with Claude Sonnet 4.0. No traditional coding was performed - every line of code, styling, and feature was generated through conversational AI assistance. This represents an experiment to understand the current state of AI-assisted development and explore what's possible when achieving real-world goals through pure AI collaboration.
+**This entire project was built using (almost) only AI prompting** through Cursor IDE with Claude Sonnet 4.0. No traditional coding was performed - every line of code, styling, and feature was generated through conversational AI assistance. This represents an experiment to understand the current state of AI-assisted development and explore what's possible when achieving real-world goals through pure AI collaboration.
 
 The development process involved:
 - Iterative feature requests through natural language
@@ -15,6 +15,8 @@ The development process involved:
 - Code architecture decisions guided by AI recommendations
 
 This project serves as both a functional tool and a case study in AI-driven software development.
+
+The KTX2 encoding/decoding could not be figured out by AI, so I peeked at the source of https://subquantumtech.com/bu_6x6/ktx2_encode_test/ and got it working, then asked AI to put my working simplified example into the project.
 
 ## ✨ Features
 
