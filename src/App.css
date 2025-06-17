@@ -29,6 +29,17 @@ body {
   border-bottom: 1px solid #404040;
 }
 
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.header-text {
+  flex: 1;
+}
+
 .app-header h1 {
   color: #61dafb;
   margin-bottom: 0.5rem;
@@ -1927,4 +1938,268 @@ body {
 .zoom-slider:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* KTX2 Converter Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: #2d2d2d;
+  border-radius: 12px;
+  border: 1px solid #404040;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #404040;
+}
+
+.modal-header h2 {
+  color: #61dafb;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: #404040;
+  color: #e0e0e0;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-body > p {
+  color: #a0a0a0;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.file-drop-zone {
+  border: 2px dashed #404040;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #1a1a1a;
+  margin-bottom: 1.5rem;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.drag-over {
+  border-color: #61dafb;
+  background: #252525;
+}
+
+.drop-instructions p {
+  color: #a0a0a0;
+  margin-bottom: 1rem;
+}
+
+.file-select-btn {
+  background: #61dafb;
+  color: #1a1a1a;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.file-select-btn:hover {
+  background: #4fa8c5;
+  transform: translateY(-1px);
+}
+
+.selected-file {
+  color: #e0e0e0;
+}
+
+.selected-file p:first-child {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.selected-file p:last-child {
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.conversion-settings {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #404040;
+}
+
+.conversion-settings h3 {
+  color: #61dafb;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.conversion-settings ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.conversion-settings li {
+  color: #a0a0a0;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #333;
+  font-size: 0.9rem;
+}
+
+.conversion-settings li:last-child {
+  border-bottom: none;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  border-top: 1px solid #404040;
+}
+
+.convert-btn {
+  background: #61dafb;
+  color: #1a1a1a;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.convert-btn:hover:not(:disabled) {
+  background: #4fa8c5;
+  transform: translateY(-1px);
+}
+
+.convert-btn:disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.cancel-btn {
+  background: #404040;
+  color: #e0e0e0;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #505050;
+  transform: translateY(-1px);
+}
+
+/* Header button styles */
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.ktx2-converter-btn {
+  background: #61dafb;
+  color: #1a1a1a;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.ktx2-converter-btn:hover {
+  background: #4fa8c5;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .header-actions {
+    align-self: stretch;
+    justify-content: center;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 1rem;
+  }
+  
+  .file-drop-zone {
+    padding: 1.5rem;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .convert-btn,
+  .cancel-btn {
+    width: 100%;
+  }
 }

@@ -7,6 +7,7 @@ import { CanvasSettings } from './components/CanvasSettings';
 import { AnimationPreview } from './components/AnimationPreview';
 import { PackingSettings } from './components/PackingSettings';
 import { SpriteStripSlicer } from './components/SpriteStripSlicer';
+import { KTX2Converter } from './components/KTX2Converter';
 import { createSpriteFrameFromFile, loadImageFromFile, downloadCanvas } from './utils/imageLoader';
 import { packSprites } from './utils/spritePacker';
 import { detectPotentialSpriteStrip } from './utils/spriteStripSlicer';
@@ -36,6 +37,7 @@ function App() {
   } | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [manualSliceFrame, setManualSliceFrame] = useState<SpriteFrame | null>(null);
+  const [showKTX2Converter, setShowKTX2Converter] = useState(false);
 
   // Pack sprites whenever frames, animations, or canvas settings change
   useEffect(() => {
@@ -394,8 +396,20 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🎮 Spritesheet Editor</h1>
-        <p>Create and export spritesheets for PixiJS and other game engines</p>
+        <div className="header-content">
+          <div className="header-text">
+            <h1>🎮 Spritesheet Editor</h1>
+            <p>Create and export spritesheets for PixiJS and other game engines</p>
+          </div>
+          <div className="header-actions">
+            <button 
+              className="ktx2-converter-btn"
+              onClick={() => setShowKTX2Converter(true)}
+            >
+              🔄 Convert to KTX2
+            </button>
+          </div>
+        </div>
       </header>
 
       <main className="app-main">
@@ -513,6 +527,11 @@ function App() {
           onKeepOriginal={handleManualSliceCancel}
         />
       )}
+
+      <KTX2Converter
+        isOpen={showKTX2Converter}
+        onClose={() => setShowKTX2Converter(false)}
+      />
     </div>
   );
 }
