@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { initBasisEncoderGlobal, type BasisEncoder } from '../libs/basis-encoder-wrapper';
-import { BasisTextureFormat } from '../libs/basis_encoder';
+import { BasisTextureFormat } from '../libs/basis_encoder.ts';
 
 interface KTX2ConverterProps {
   isOpen: boolean;
@@ -87,7 +87,7 @@ export const KTX2Converter: React.FC<KTX2ConverterProps> = ({ isOpen, onClose })
       encoder.setMipSRGB(true);
       encoder.setPerceptual(true);
       encoder.setFormatMode(BasisTextureFormat.cUASTC4x4); // UASTC mode
-      encoder.setPackUASTCFlags(3); // 0-4. 4 is very slow.
+      encoder.setPackUASTCFlags(4); // 0-4. 4 is very slow.
 
       // RDO, no idea what RDO is
       //encoder.setRDOUASTC(true);
