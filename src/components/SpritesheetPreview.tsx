@@ -24,6 +24,7 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
   const [useKTX2Format, setUseKTX2Format] = useState(false);
   const [autoFit, setAutoFit] = useState(true);
   const [marchingAntsOffset, setMarchingAntsOffset] = useState(0);
+  const [baseName, setBaseName] = useState('spritesheet');
 
   // Animation for marching ants
   useEffect(() => {
@@ -228,7 +229,8 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
 
   const handleDownloadPNG = () => {
     if (packedSheet) {
-      downloadCanvas(packedSheet.canvas, 'spritesheet.png');
+      const fileName = `${baseName || 'spritesheet'}.png`;
+      downloadCanvas(packedSheet.canvas, fileName);
     }
   };
 
@@ -323,7 +325,7 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
       console.log(`KTX2 encoding succeeded, output size: ${outputSize} bytes`);
 
       // Download the file
-      const filename = 'spritesheet.ktx2';
+      const filename = `${baseName || 'spritesheet'}.ktx2`;
       const blob = new Blob([ktx2Data], { type: 'image/ktx2' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -365,7 +367,8 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
         };
       }
 
-      downloadJSON(spritesheetData, 'spritesheet.json');
+      const fileName = `${baseName || 'spritesheet'}.json`;
+      downloadJSON(spritesheetData, fileName);
     }
   };
 
@@ -561,19 +564,32 @@ export const SpritesheetPreview: React.FC<SpritesheetPreviewProps> = ({ packedSh
       </div>
 
       <div className="export-controls">
-        <button onClick={handleDownloadPNG} className="export-btn">
-          📥 Download PNG
-        </button>
-        <button onClick={handleDownloadJSON} className="export-btn">
-          📄 Download JSON
-        </button>
-        <button
-          id='download-ktx2-btn'
-          onClick={handleDownloadKTX2}
-          className="export-btn"
-        >
-          📄 Download KTX2
-        </button>
+        <div className="export-buttons">
+          <button onClick={handleDownloadPNG} className="export-btn">
+            📥 Download PNG
+          </button>
+          <button onClick={handleDownloadJSON} className="export-btn">
+            📄 Download JSON
+          </button>
+          <button
+            id='download-ktx2-btn'
+            onClick={handleDownloadKTX2}
+            className="export-btn"
+          >
+            📄 Download KTX2
+          </button>
+        </div>
+        <div className="filename-control">
+          <label htmlFor="base-name-input">Filename: </label>
+          <input
+            id="base-name-input"
+            type="text"
+            value={baseName}
+            onChange={(e) => setBaseName(e.target.value)}
+            placeholder="spritesheet"
+            className="base-name-input"
+          />
+        </div>
         <div className="export-options">
           <label className="export-option">
             <input
