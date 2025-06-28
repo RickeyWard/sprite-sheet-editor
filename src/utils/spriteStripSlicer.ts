@@ -11,7 +11,12 @@ export interface SliceConfig {
   paddingY: number;
 }
 
-export function detectPotentialSpriteStrip(image: HTMLImageElement): boolean {
+export function detectPotentialSpriteStrip(image: HTMLImageElement, filename?: string): boolean {
+  // Check filename for "strip" pattern first - this takes priority
+  if (filename && filename.toLowerCase().includes('strip')) {
+    return true;
+  }
+  
   const aspectRatio = image.width / image.height;
   
   // Consider it a potential sprite strip if:
@@ -24,7 +29,51 @@ export function detectPotentialSpriteStrip(image: HTMLImageElement): boolean {
          (image.width % 16 === 0 && image.height % 16 === 0);
 }
 
-export function suggestSliceConfig(image: HTMLImageElement): SliceConfig {
+export function suggestSliceConfig(image: HTMLImageElement, filename?: string): SliceConfig {
+  // Check filename for "strip" pattern and extract number
+  if (filename) {
+    const lowerFilename = filename.toLowerCase();
+    if (lowerFilename.includes('strip')) {
+      // Look for pattern like "strip8", "strip12", etc.
+      const stripMatch = lowerFilename.match(/strip(\d+)/);
+      if (stripMatch) {
+        const columns = parseInt(stripMatch[1], 10);
+        return {
+          columns: Math.max(1, Math.min(columns, 32)), // Clamp between 1 and 32
+          rows: 1,
+          frameWidth: Math.floor(image.width / Math.max(1, Math.min(columns, 32))),
+          frameHeight: image.height,
+          spacing: 0,
+          margin: 0,
+          paddingX: 0,
+          paddingY: 0
+        };
+      } else {
+        // If filename contains "strip" but no number, assume horizontal strip
+        // Try to guess number of frames based on common frame sizes
+        const commonFrameSizes = [16, 24, 32, 48, 64, 96, 128];
+        let bestGuess = 1;
+        
+        for (const size of commonFrameSizes) {
+          if (image.width % size === 0 && image.height <= size * 2) {
+            bestGuess = Math.max(bestGuess, Math.floor(image.width / size));
+          }
+        }
+        
+        return {
+          columns: Math.min(bestGuess, 16),
+          rows: 1,
+          frameWidth: Math.floor(image.width / Math.min(bestGuess, 16)),
+          frameHeight: image.height,
+          spacing: 0,
+          margin: 0,
+          paddingX: 0,
+          paddingY: 0
+        };
+      }
+    }
+  }
+  
   const aspectRatio = image.width / image.height;
   
   // Default suggestion based on aspect ratio

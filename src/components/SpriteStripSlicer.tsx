@@ -19,7 +19,7 @@ export const SpriteStripSlicer: React.FC<SpriteStripSlicerProps> = ({
   onCancel,
   onKeepOriginal
 }) => {
-  const [config, setConfig] = useState<SliceConfig>(() => suggestSliceConfig(image));
+  const [config, setConfig] = useState<SliceConfig>(() => suggestSliceConfig(image, baseName));
   const [previewCanvas, setPreviewCanvas] = useState<HTMLCanvasElement | null>(null);
   const [paddingPreviewCanvas, setPaddingPreviewCanvas] = useState<HTMLCanvasElement | null>(null);
   const [createAnimation, setCreateAnimation] = useState(true);

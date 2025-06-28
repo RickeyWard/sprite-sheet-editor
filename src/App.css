@@ -2203,3 +2203,168 @@ body {
     width: 100%;
   }
 }
+
+/* KTX2 Encoding Options */
+.encoding-options {
+  margin-top: 1.5rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.encoding-options h3 {
+  color: #61dafb;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.ktx2-converter .option-group {
+  background: #353535;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #404040;
+}
+
+.ktx2-converter .option-group h4 {
+  color: #61dafb;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ktx2-converter .option-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-height: 24px;
+}
+
+.ktx2-converter .option-group label:last-child {
+  margin-bottom: 0;
+}
+
+.ktx2-converter .option-group input[type="range"] {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #2d2d2d;
+  outline: none;
+  border: none;
+}
+
+.ktx2-converter .option-group input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #61dafb;
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+}
+
+.ktx2-converter .option-group input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #61dafb;
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+}
+
+.ktx2-converter .option-group input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #61dafb;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ktx2-converter .option-group select {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  background: #2d2d2d;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.ktx2-converter .option-group select:focus {
+  outline: none;
+  border-color: #61dafb;
+  box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.2);
+}
+
+.ktx2-converter .option-group span {
+  background: #2d2d2d;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #61dafb;
+  min-width: 35px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ktx2-converter .preset-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ktx2-converter .preset-buttons button {
+  background: #404040;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.ktx2-converter .preset-buttons button:hover {
+  background: #505050;
+  border-color: #61dafb;
+}
+
+.ktx2-converter .preset-buttons button:active {
+  background: #61dafb;
+  color: #1a1a1a;
+}
+
+/* Scrollbar for encoding options */
+.encoding-options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.encoding-options::-webkit-scrollbar-track {
+  background: #2d2d2d;
+  border-radius: 4px;
+}
+
+.encoding-options::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+.encoding-options::-webkit-scrollbar-thumb:hover {
+  background: #505050;
+}
+
+/* Modal adjustments for larger content */
+.ktx2-converter .modal-content {
+  max-width: 650px;
+  max-height: 90vh;
+}
+
+.ktx2-converter .modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}

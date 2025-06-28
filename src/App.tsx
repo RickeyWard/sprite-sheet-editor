@@ -121,7 +121,7 @@ function App() {
         const image = await loadImageFromFile(file);
         
         // Check if this might be a sprite strip
-        if (detectPotentialSpriteStrip(image)) {
+        if (detectPotentialSpriteStrip(image, file.name)) {
           spriteStripFiles.push(file);
         } else {
           regularFiles.push(file);
@@ -311,7 +311,7 @@ function App() {
       
       try {
         const image = await loadImageFromFile(nextFile);
-        if (detectPotentialSpriteStrip(image)) {
+        if (detectPotentialSpriteStrip(image, nextFile.name)) {
           setPendingSpriteStrip({ image, file: nextFile });
         } else {
           // Process as regular frame and continue
